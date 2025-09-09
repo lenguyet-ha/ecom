@@ -57,14 +57,25 @@ export class AuthService {
     }
 
     async generateTokens(payload: { userId: number }) {
-        const accessToken = this.tokenService.signAccessToken(payload);
-        const refreshToken = this.tokenService.signRefreshToken(payload);
+        const [accessToken, refreshToken] = await Promise.all([
+            this.tokenService.signAccessToken(payload),
+            this.tokenService.signRefreshToken(payload),
+        ]);
         const decodedRefreshToken = await this.tokenService.verifyRefreshToken(refreshToken);
+
+        const device = await this.prismaService.device.create({
+            data: {
+                userId: payload.userId,
+                userAgent: 'Unknown',
+                ip: '127.0.0.1',
+            },
+        });
+
         await this.prismaService.refreshToken.create({
             data: {
                 token: refreshToken,
                 userId: payload.userId,
-                deviceId: 1,
+                deviceId: device.id,
                 expiresAt: new Date(decodedRefreshToken.exp * 1000),
             },
         });
