@@ -23,6 +23,7 @@ const configSchema = z.object({
     ADMIN_EMAIL: z.string().email(),
     ADMIN_PASSWORD: z.string(),
     ADMIN_PHONE_NUMBER: z.string(),
+    OTP_EXPIRES_IN: z.string().default('5m'),
 });
 
 const configServer = configSchema.safeParse(process.env);
