@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { HashingService } from 'src/shared/services/hashing.service';
 import { PrismaService } from 'src/shared/services/prisma.service';
 import { TokenService } from 'src/shared/services/token.service';
@@ -26,11 +26,15 @@ export class AuthService {
                     phoneNumber: body.phoneNumber,
                     roleId: clientRoleId,
                 },
+                omit: {
+                    totpSecret: true,
+                    password: true,
+                },
             });
             return newUser;
         } catch (error) {
             if (isUniqueConstraintPrismaError(error)) {
-                throw new Error('Email already exists');
+                throw new BadRequestException('Email already exists');
             }
             throw error;
         }
@@ -102,7 +106,7 @@ export class AuthService {
             return await this.generateTokens({ userId });
         } catch (error) {
             if (isNotFoundPrismaError(error)) {
-                throw new Error('Invalid refresh token');
+                throw new BadRequestException('Invalid refresh token');
             }
             throw new UnauthorizedException();
         }
@@ -116,7 +120,7 @@ export class AuthService {
             });
         } catch (error) {
             if (isNotFoundPrismaError(error)) {
-                throw new Error('Invalid refresh token');
+                throw new BadRequestException('Invalid refresh token');
             }
             throw new UnauthorizedException();
         }
