@@ -1,35 +1,33 @@
 import { BadRequestException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { HashingService } from 'src/shared/services/hashing.service';
-import { PrismaService } from 'src/shared/services/prisma.service';
 import { TokenService } from 'src/shared/services/token.service';
 import { RoleService } from './role.service';
-import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from 'src/shared/helpers';
+import { isUniqueConstraintPrismaError } from 'src/shared/helpers';
+import { UserRepository } from 'src/shared/repositories/user.repository';
+import { DeviceRepository } from 'src/shared/repositories/device.repository';
+import { RefreshTokenRepository } from 'src/shared/repositories/refresh-token.repository';
 
 @Injectable()
 export class AuthService {
     constructor(
         private readonly hashingService: HashingService,
-        private readonly prismaService: PrismaService,
         private readonly tokenService: TokenService,
         private readonly roleService: RoleService,
+        private readonly userRepository: UserRepository,
+        private readonly deviceRepository: DeviceRepository,
+        private readonly refreshTokenRepository: RefreshTokenRepository,
     ) {}
 
     async register(body: any) {
         try {
             const clientRoleId = await this.roleService.getClientRoleId();
             const hashedPassword = await this.hashingService.hash(body.password);
-            const newUser = await this.prismaService.user.create({
-                data: {
-                    name: body.name,
-                    email: body.email,
-                    password: hashedPassword,
-                    phoneNumber: body.phoneNumber,
-                    roleId: clientRoleId,
-                },
-                omit: {
-                    totpSecret: true,
-                    password: true,
-                },
+            const newUser = await this.userRepository.create({
+                name: body.name,
+                email: body.email,
+                password: hashedPassword,
+                phoneNumber: body.phoneNumber,
+                role: { connect: { id: clientRoleId } },
             });
             return newUser;
         } catch (error) {
@@ -41,11 +39,9 @@ export class AuthService {
     }
 
     async login(body: any) {
-        const user = await this.prismaService.user.findUnique({
-            where: { email: body.email },
-        });
+        const user = await this.userRepository.findByEmail(body.email);
         if (!user) {
-            throw new Error('Invalid credentials');
+            throw new UnauthorizedException('Invalid credentials');
         }
         const isPasswordValid = await this.hashingService.compare(body.password, user.password);
         if (!isPasswordValid) {
@@ -66,22 +62,19 @@ export class AuthService {
             this.tokenService.signRefreshToken(payload),
         ]);
         const decodedRefreshToken = await this.tokenService.verifyRefreshToken(refreshToken);
-
-        const device = await this.prismaService.device.create({
-            data: {
-                userId: payload.userId,
-                userAgent: 'Unknown',
-                ip: '127.0.0.1',
-            },
+        
+        // Create or find a device for this user
+        const device = await this.deviceRepository.create({
+            user: { connect: { id: payload.userId } },
+            userAgent: 'Unknown', // You should pass this from the request
+            ip: '127.0.0.1', // You should pass this from the request
         });
-
-        await this.prismaService.refreshToken.create({
-            data: {
-                token: refreshToken,
-                userId: payload.userId,
-                deviceId: device.id,
-                expiresAt: new Date(decodedRefreshToken.exp * 1000),
-            },
+        
+        await this.refreshTokenRepository.create({
+            token: refreshToken,
+            user: { connect: { id: payload.userId } },
+            device: { connect: { id: device.id } },
+            expiresAt: new Date(decodedRefreshToken.exp * 1000),
         });
         return { accessToken, refreshToken };
     }
@@ -89,40 +82,22 @@ export class AuthService {
     async refreshToken(oldRefreshToken: string) {
         try {
             const { userId } = await this.tokenService.verifyRefreshToken(oldRefreshToken);
-            const storedToken = await this.prismaService.refreshToken.findFirst({
-                where: {
-                    token: oldRefreshToken,
-                    userId,
-                },
-            });
-            if (!storedToken) {
-                throw new Error('Invalid refresh token');
+            const storedToken = await this.refreshTokenRepository.findByToken(oldRefreshToken);
+            if (!storedToken || storedToken.userId !== userId) {
+                throw new BadRequestException('Invalid refresh token');
             }
-            await this.prismaService.refreshToken.delete({
-                where: {
-                    token: oldRefreshToken,
-                },
-            });
+            await this.refreshTokenRepository.delete(oldRefreshToken);
             return await this.generateTokens({ userId });
         } catch (error) {
-            if (isNotFoundPrismaError(error)) {
-                throw new BadRequestException('Invalid refresh token');
-            }
-            throw new UnauthorizedException();
+            throw new UnauthorizedException('Invalid refresh token');
         }
     }
+    
     async logout(oldRefreshToken: string) {
         try {
-            await this.prismaService.refreshToken.delete({
-                where: {
-                    token: oldRefreshToken,
-                },
-            });
+            await this.refreshTokenRepository.delete(oldRefreshToken);
         } catch (error) {
-            if (isNotFoundPrismaError(error)) {
-                throw new BadRequestException('Invalid refresh token');
-            }
-            throw new UnauthorizedException();
+            throw new BadRequestException('Invalid refresh token');
         }
     }
 }

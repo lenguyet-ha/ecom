@@ -7,8 +7,18 @@ import { AccessTokenGuard } from 'src/shared/guards/access-token.guard';
 import { APIKeyGuard } from 'src/shared/guards/api-key.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthenticationGuard } from 'src/shared/guards/authentication.guard';
+import { UserRepository } from './repositories/user.repository';
+import { DeviceRepository } from './repositories/device.repository';
+import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 
-const sharedServices = [PrismaService, HashingService, TokenService];
+const sharedServices = [
+    PrismaService, 
+    HashingService, 
+    TokenService,
+    UserRepository,
+    DeviceRepository,
+    RefreshTokenRepository
+];
 
 @Global()
 @Module({

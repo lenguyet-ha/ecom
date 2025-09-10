@@ -1,7 +1,6 @@
 import { UserStatus } from '@prisma/client';
 import { createZodDto } from 'nestjs-zod';
 import z from 'zod';
-import id from 'zod/v4/locales/id.js';
 
 const UserSchema = z.object({
     id: z.number(),
@@ -18,21 +17,21 @@ const UserSchema = z.object({
     updatedAt: z.date(),
 });
 
-const RegisterBodySchema = z
-    .object({
-        email: z.string().email(),
-        name: z.string().min(2).max(100),
-        phoneNumber: z.string().min(9).max(15),
+const RegisterBodySchema = UserSchema.pick({
+    name: true,
+    email: true,
+    phoneNumber: true,
+})
+    .extend({
         password: z.string().min(6).max(100),
         confirmPassword: z.string().min(6).max(100),
     })
     .strict()
-    .superRefine(({ password, confirmPassword }, ctx) => {
+    .superRefine(({ confirmPassword, password }, ctx) => {
         if (password !== confirmPassword) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: 'Password and confirm password do not match',
-                path: ['confirmPassword'],
+                message: 'Passwords do not match',
             });
         }
     });
