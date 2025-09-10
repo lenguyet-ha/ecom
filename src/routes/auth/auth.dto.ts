@@ -1,5 +1,6 @@
 import { UserStatus } from '@prisma/client';
 import { createZodDto } from 'nestjs-zod';
+import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant';
 import z from 'zod';
 
 const UserSchema = z.object({
@@ -25,6 +26,7 @@ const RegisterBodySchema = UserSchema.pick({
     .extend({
         password: z.string().min(6).max(100),
         confirmPassword: z.string().min(6).max(100),
+        code: z.string().length(6),
     })
     .strict()
     .superRefine(({ confirmPassword, password }, ctx) => {
@@ -36,6 +38,24 @@ const RegisterBodySchema = UserSchema.pick({
         }
     });
 
+const VerificationCode = z.object({
+    id: z.number(),
+    email: z.string().email(),
+    code: z.string().length(6),
+    type: z.enum([TypeOfVerificationCode.REGISTER, TypeOfVerificationCode.FORGOT_PASSWORD]),
+    expiresAt: z.date(),
+    createdAt: z.date(),
+});
+
+export const SendOTPBodySchema = VerificationCode.pick({
+    email: true,
+    type: true,
+}).strict();
+
 export class RegisterBodyDTO extends createZodDto(RegisterBodySchema) {}
 
 export class RegisterResDTO extends createZodDto(UserSchema) {}
+
+export class VerificationCodeDTO extends createZodDto(VerificationCode) {}
+
+export class SendOtpDTO extends createZodDto(SendOTPBodySchema) {}

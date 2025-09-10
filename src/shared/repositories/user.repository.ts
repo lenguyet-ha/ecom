@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../services/prisma.service';
-import { User, Prisma } from '@prisma/client';
+import { User, Prisma, VerificationCode } from '@prisma/client';
 
 @Injectable()
 export class UserRepository {
@@ -38,6 +38,24 @@ export class UserRepository {
     async delete(id: number): Promise<User> {
         return this.prisma.user.delete({
             where: { id },
+        });
+    }
+
+    async createVerificationCode(
+        payload: Pick<VerificationCode, 'email' | 'type' | 'code' | 'expiresAt'>,
+    ): Promise<VerificationCode> {
+        return this.prisma.verificationCode.upsert({
+            where: {
+                email_type: {
+                    email: payload.email,
+                    type: payload.type,
+                },
+            },
+            create: payload,
+            update: {
+                code: payload.code,
+                expiresAt: payload.expiresAt,
+            },
         });
     }
 }

@@ -2,10 +2,13 @@ import { BadRequestException, Injectable, UnauthorizedException, UnprocessableEn
 import { HashingService } from 'src/shared/services/hashing.service';
 import { TokenService } from 'src/shared/services/token.service';
 import { RoleService } from './role.service';
-import { isUniqueConstraintPrismaError } from 'src/shared/helpers';
+import { generateOTP, isUniqueConstraintPrismaError } from 'src/shared/helpers';
 import { UserRepository } from 'src/shared/repositories/user.repository';
 import { DeviceRepository } from 'src/shared/repositories/device.repository';
 import { RefreshTokenRepository } from 'src/shared/repositories/refresh-token.repository';
+import envConfig from 'src/shared/config';
+import { addMilliseconds } from 'date-fns';
+import ms from 'ms';
 
 @Injectable()
 export class AuthService {
@@ -37,7 +40,28 @@ export class AuthService {
             throw error;
         }
     }
-
+    async sendOTP(body: any) {
+        // 1. Kiểm tra email đã tồn tại trong database chưa
+        const user = await this.userRepository.findByEmail(body.email);
+        if (user) {
+            throw new UnprocessableEntityException([
+                {
+                    message: 'Email đã tồn tại',
+                    path: 'email',
+                },
+            ]);
+        }
+        // 2. Tạo mã OTP
+        const code = generateOTP();
+        const verificationCode = this.userRepository.createVerificationCode({
+            email: body.email,
+            code,
+            type: body.type,
+            expiresAt: addMilliseconds(new Date(), ms(envConfig.OTP_EXPIRES_IN)),
+        });
+        // 3. Gửi mã OTP
+        return verificationCode;
+    }
     async login(body: any) {
         const user = await this.userRepository.findByEmail(body.email);
         if (!user) {
@@ -62,14 +86,14 @@ export class AuthService {
             this.tokenService.signRefreshToken(payload),
         ]);
         const decodedRefreshToken = await this.tokenService.verifyRefreshToken(refreshToken);
-        
+
         // Create or find a device for this user
         const device = await this.deviceRepository.create({
             user: { connect: { id: payload.userId } },
             userAgent: 'Unknown', // You should pass this from the request
             ip: '127.0.0.1', // You should pass this from the request
         });
-        
+
         await this.refreshTokenRepository.create({
             token: refreshToken,
             user: { connect: { id: payload.userId } },
@@ -92,7 +116,7 @@ export class AuthService {
             throw new UnauthorizedException('Invalid refresh token');
         }
     }
-    
+
     async logout(oldRefreshToken: string) {
         try {
             await this.refreshTokenRepository.delete(oldRefreshToken);
