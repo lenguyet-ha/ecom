@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../services/prisma.service';
 import { User, Prisma, VerificationCode } from '@prisma/client';
+import { TypeOfVerificationCodeType } from 'src/shared/constants/auth.constant';
 
 @Injectable()
 export class UserRepository {
@@ -56,6 +57,15 @@ export class UserRepository {
                 code: payload.code,
                 expiresAt: payload.expiresAt,
             },
+        });
+    }
+    async findVerificationCode(uniqueValue: {
+        email: string;
+        code: string;
+        type: TypeOfVerificationCodeType;
+    }): Promise<VerificationCode | null> {
+        return await this.prisma.verificationCode.findFirst({
+            where: uniqueValue,
         });
     }
 }

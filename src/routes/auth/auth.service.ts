@@ -9,6 +9,7 @@ import { RefreshTokenRepository } from 'src/shared/repositories/refresh-token.re
 import envConfig from 'src/shared/config';
 import { addMilliseconds } from 'date-fns';
 import ms from 'ms';
+import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,27 @@ export class AuthService {
 
     async register(body: any) {
         try {
+            const verifycationCode = await this.userRepository.findVerificationCode({
+                email: body.email,
+                code: body.code,
+                type: TypeOfVerificationCode.REGISTER,
+            });
+            if (!verifycationCode || verifycationCode.code !== body.code) {
+                throw new UnprocessableEntityException([
+                    {
+                        message: 'Mã OTP không hợp lệ',
+                        paht: 'code',
+                    },
+                ]);
+            }
+            if (verifycationCode.expiresAt < new Date()) {
+                throw new UnprocessableEntityException([
+                    {
+                        message: 'Mã OTP đã hết hạn',
+                        paht: 'code',
+                    },
+                ]);
+            }
             const clientRoleId = await this.roleService.getClientRoleId();
             const hashedPassword = await this.hashingService.hash(body.password);
             const newUser = await this.userRepository.create({
