@@ -18,10 +18,10 @@ import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
             useClass: CustomZodValidationPipe,
         },
         { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
-          {
-      provide: APP_FILTER,
-      useClass: HttpExceptionFilter,
-    },
+        {
+            provide: APP_FILTER,
+            useClass: HttpExceptionFilter,
+        },
     ],
 })
 export class AppModule {}
