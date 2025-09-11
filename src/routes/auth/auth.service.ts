@@ -24,27 +24,27 @@ export class AuthService {
 
     async register(body: any) {
         try {
-            const verifycationCode = await this.userRepository.findVerificationCode({
-                email: body.email,
-                code: body.code,
-                type: TypeOfVerificationCode.REGISTER,
-            });
-            if (!verifycationCode || verifycationCode.code !== body.code) {
-                throw new UnprocessableEntityException([
-                    {
-                        message: 'Mã OTP không hợp lệ',
-                        paht: 'code',
-                    },
-                ]);
-            }
-            if (verifycationCode.expiresAt < new Date()) {
-                throw new UnprocessableEntityException([
-                    {
-                        message: 'Mã OTP đã hết hạn',
-                        paht: 'code',
-                    },
-                ]);
-            }
+            // const verifycationCode = await this.userRepository.findVerificationCode({
+            //     email: body.email,
+            //     code: body.code,
+            //     type: TypeOfVerificationCode.REGISTER,
+            // });
+            // if (!verifycationCode || verifycationCode.code !== body.code) {
+            //     throw new UnprocessableEntityException([
+            //         {
+            //             message: 'Mã OTP không hợp lệ',
+            //             paht: 'code',
+            //         },
+            //     ]);
+            // }
+            // if (verifycationCode.expiresAt < new Date()) {
+            //     throw new UnprocessableEntityException([
+            //         {
+            //             message: 'Mã OTP đã hết hạn',
+            //             paht: 'code',
+            //         },
+            //     ]);
+            // }
             const clientRoleId = await this.roleService.getClientRoleId();
             const hashedPassword = await this.hashingService.hash(body.password);
             const newUser = await this.userRepository.create({
@@ -85,9 +85,15 @@ export class AuthService {
         return verificationCode;
     }
     async login(body: any) {
-        const user = await this.userRepository.findByEmail(body.email);
+        const user = await this.userRepository.findByEmailWithRole(body.email);
+
         if (!user) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnprocessableEntityException([
+                {
+                    message: 'Email không tồn tại',
+                    path: 'email',
+                },
+            ]);
         }
         const isPasswordValid = await this.hashingService.compare(body.password, user.password);
         if (!isPasswordValid) {
@@ -98,11 +104,11 @@ export class AuthService {
                 },
             ]);
         }
-        const tokens = await this.generateTokens({ userId: user.id });
+        const tokens = await this.generateTokens({ userId: user.id, roleId: user.roleId, roleName: user.role.name });
         return { ...tokens };
     }
 
-    async generateTokens(payload: { userId: number }) {
+    async generateTokens(payload: any) {
         const [accessToken, refreshToken] = await Promise.all([
             this.tokenService.signAccessToken(payload),
             this.tokenService.signRefreshToken(payload),

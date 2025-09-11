@@ -16,6 +16,7 @@ const UserSchema = z.object({
     deletedAt: z.date().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
+    password: z.string().optional(),
 });
 
 const RegisterBodySchema = UserSchema.pick({
@@ -26,7 +27,7 @@ const RegisterBodySchema = UserSchema.pick({
     .extend({
         password: z.string().min(6).max(100),
         confirmPassword: z.string().min(6).max(100),
-        code: z.string().length(6),
+        // code: z.string().length(6),
     })
     .strict()
     .superRefine(({ confirmPassword, password }, ctx) => {
@@ -37,6 +38,16 @@ const RegisterBodySchema = UserSchema.pick({
             });
         }
     });
+
+export const RegisterResSchema = z.object({
+    id: z.number(),
+    email: z.string(),
+    name: z.string(),
+    phoneNumber: z.string(),
+    avatar: z.string().nullable().optional(),
+    status: z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE, UserStatus.BLOCKED]).optional(),
+    roleId: z.number().optional(),
+});
 
 const VerificationCode = z.object({
     id: z.number(),
@@ -52,9 +63,23 @@ export const SendOTPBodySchema = VerificationCode.pick({
     type: true,
 }).strict();
 
+export const RoleSchema = z.object({
+    id: z.number(),
+    name: z.string(),
+    description: z.string(),
+    isActive: z.boolean(),
+    createdById: z.number().nullable(),
+    updatedById: z.number().nullable(),
+    deletedAt: z.date().nullable(),
+    createdAt: z.date(),
+    updatedAt: z.date(),
+});
+
+export type RoleType = z.infer<typeof RoleSchema>;
+
 export class RegisterBodyDTO extends createZodDto(RegisterBodySchema) {}
 
-export class RegisterResDTO extends createZodDto(UserSchema) {}
+export class RegisterResDTO extends createZodDto(RegisterResSchema) {}
 
 export class VerificationCodeDTO extends createZodDto(VerificationCode) {}
 
