@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../services/prisma.service';
 import { RefreshToken, Prisma } from '@prisma/client';
+import { RoleType } from 'src/routes/auth/auth.dto';
 
 @Injectable()
 export class RefreshTokenRepository {
@@ -30,7 +32,7 @@ export class RefreshTokenRepository {
         });
     }
 
-    async delete(token: string): Promise<RefreshToken> {
+    async delete(token: string): Promise<any> {
         return this.prisma.refreshToken.delete({
             where: { token },
         });
@@ -55,6 +57,19 @@ export class RefreshTokenRepository {
     async deleteByDeviceId(deviceId: number): Promise<{ count: number }> {
         return this.prisma.refreshToken.deleteMany({
             where: { deviceId },
+        });
+    }
+
+    async findUniqueRefreshTokenIncludeUserRole(uniqueObject: { token: string }): Promise<any | null> {
+        return await this.prisma.refreshToken.findUnique({
+            where: uniqueObject,
+            include: {
+                user: {
+                    include: {
+                        role: true,
+                    },
+                },
+            },
         });
     }
 }

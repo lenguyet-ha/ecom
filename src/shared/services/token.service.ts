@@ -1,14 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-
-import { RefreshTokenPayload, TokenPayload } from 'src/shared/types/jwt.type';
-import envConfig from '../config';
+import envConfig from 'src/shared/config';
+import {
+    AccessTokenPayload,
+    AccessTokenPayloadCreate,
+    RefreshTokenPayload,
+    RefreshTokenPayloadCreate,
+} from 'src/shared/types/jwt.type';
 
 @Injectable()
 export class TokenService {
     constructor(private readonly jwtService: JwtService) {}
 
-    signAccessToken(payload: any) {
+    signAccessToken(payload: AccessTokenPayloadCreate) {
         return this.jwtService.sign(payload, {
             secret: envConfig.ACCESS_TOKEN_SECRET,
             expiresIn: envConfig.ACCESS_TOKEN_EXPIRES_IN,
@@ -16,7 +20,7 @@ export class TokenService {
         });
     }
 
-    signRefreshToken(payload: any) {
+    signRefreshToken(payload: RefreshTokenPayloadCreate) {
         return this.jwtService.sign(payload, {
             secret: envConfig.REFRESH_TOKEN_SECRET,
             expiresIn: envConfig.REFRESH_TOKEN_EXPIRES_IN,
@@ -24,7 +28,7 @@ export class TokenService {
         });
     }
 
-    verifyAccessToken(token: string): Promise<TokenPayload> {
+    verifyAccessToken(token: string): Promise<AccessTokenPayload> {
         return this.jwtService.verifyAsync(token, {
             secret: envConfig.ACCESS_TOKEN_SECRET,
         });

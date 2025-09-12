@@ -13,9 +13,9 @@ const UserSchema = z.object({
     roleId: z.number(),
     createdById: z.number().nullable(),
     updatedById: z.number().nullable(),
-    deletedAt: z.date().nullable(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
+    deletedAt: z.iso.datetime().nullable(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
     password: z.string().optional(),
 });
 
@@ -54,8 +54,8 @@ const VerificationCode = z.object({
     email: z.string().email(),
     code: z.string().length(6),
     type: z.enum([TypeOfVerificationCode.REGISTER, TypeOfVerificationCode.FORGOT_PASSWORD]),
-    expiresAt: z.date(),
-    createdAt: z.date(),
+    expiresAt: z.iso.datetime(),
+    createdAt: z.iso.datetime(),
 });
 
 export const SendOTPBodySchema = VerificationCode.pick({
@@ -70,9 +70,9 @@ export const RoleSchema = z.object({
     isActive: z.boolean(),
     createdById: z.number().nullable(),
     updatedById: z.number().nullable(),
-    deletedAt: z.date().nullable(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
+    deletedAt: z.iso.datetime().nullable(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
 });
 
 export type RoleType = z.infer<typeof RoleSchema>;

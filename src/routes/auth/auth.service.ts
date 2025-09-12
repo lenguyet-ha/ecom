@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
+import {
+    BadRequestException,
+    HttpException,
+    Injectable,
+    UnauthorizedException,
+    UnprocessableEntityException,
+} from '@nestjs/common';
 import { HashingService } from 'src/shared/services/hashing.service';
 import { TokenService } from 'src/shared/services/token.service';
 import { RoleService } from './role.service';
@@ -9,7 +15,6 @@ import { RefreshTokenRepository } from 'src/shared/repositories/refresh-token.re
 import envConfig from 'src/shared/config';
 import { addMilliseconds } from 'date-fns';
 import ms from 'ms';
-import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant';
 
 @Injectable()
 export class AuthService {
@@ -108,40 +113,62 @@ export class AuthService {
         return { ...tokens };
     }
 
-    async generateTokens(payload: any) {
+    async generateTokens({ userId, roleId, roleName }) {
         const [accessToken, refreshToken] = await Promise.all([
-            this.tokenService.signAccessToken(payload),
-            this.tokenService.signRefreshToken(payload),
+            this.tokenService.signAccessToken({
+                userId,
+                roleId,
+                roleName,
+            }),
+            this.tokenService.signRefreshToken({ userId }),
         ]);
         const decodedRefreshToken = await this.tokenService.verifyRefreshToken(refreshToken);
 
         // Create or find a device for this user
         const device = await this.deviceRepository.create({
-            user: { connect: { id: payload.userId } },
+            user: { connect: { id: userId } },
             userAgent: 'Unknown', // You should pass this from the request
             ip: '127.0.0.1', // You should pass this from the request
         });
 
         await this.refreshTokenRepository.create({
             token: refreshToken,
-            user: { connect: { id: payload.userId } },
+            user: { connect: { id: userId } },
             device: { connect: { id: device.id } },
             expiresAt: new Date(decodedRefreshToken.exp * 1000),
         });
         return { accessToken, refreshToken };
     }
 
-    async refreshToken(oldRefreshToken: string) {
+    async refreshToken({ refreshToken }: { refreshToken: string }) {
         try {
-            const { userId } = await this.tokenService.verifyRefreshToken(oldRefreshToken);
-            const storedToken = await this.refreshTokenRepository.findByToken(oldRefreshToken);
-            if (!storedToken || storedToken.userId !== userId) {
-                throw new BadRequestException('Invalid refresh token');
+            // 1. Kiểm tra refreshToken có hợp lệ không
+            const { userId } = await this.tokenService.verifyRefreshToken(refreshToken);
+            // 2. Kiểm tra refreshToken có tồn tại trong database không
+            const refreshTokenInDb = await this.refreshTokenRepository.findUniqueRefreshTokenIncludeUserRole({
+                token: refreshToken,
+            });
+            if (!refreshTokenInDb) {
+                // Trường hợp đã refresh token rồi, hãy thông báo cho user biết
+                // refresh token của họ đã bị đánh cắp
+                throw new UnauthorizedException('Refresh Token đã được sử dụng');
             }
-            await this.refreshTokenRepository.delete(oldRefreshToken);
-            return await this.generateTokens({ userId });
+            const {
+                user: { roleId, name: roleName },
+            } = refreshTokenInDb;
+            // 3. Cập nhật device
+
+            // 4. Xóa refreshToken cũ
+            const $deleteRefreshToken = this.refreshTokenRepository.delete(refreshToken);
+            // 5. Tạo mới accessToken và refreshToken
+            const $tokens = this.generateTokens({ userId, roleId, roleName });
+            const [, tokens] = await Promise.all([$deleteRefreshToken, $tokens]);
+            return tokens;
         } catch (error) {
-            throw new UnauthorizedException('Invalid refresh token');
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            throw new UnauthorizedException();
         }
     }
 

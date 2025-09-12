@@ -1,17 +1,16 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterBodyDTO, RegisterResDTO, SendOtpDTO } from './auth.dto';
-import { ZodSerializerDto } from 'nestjs-zod';
 
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
     @Post('register')
-    // @ZodSerializerDto(RegisterResDTO)
-    register(@Body() body: RegisterBodyDTO) {
-        // return await this.authService.register(body);
-        return { userId: 123, email: 'test@example.com', password: 'secret', createdAt: new Date() };
+    // @ZodResponse({ type: RegisterResDTO })
+    async register(@Body() body: RegisterBodyDTO) {
+        return await this.authService.register(body);
+        // return { userId: 123, email: 'test@example.com', password: 'secret', createdAt: new Date() };
     }
 
     @Post('otp')

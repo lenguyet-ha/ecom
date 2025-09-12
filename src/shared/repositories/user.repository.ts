@@ -8,11 +8,7 @@ import { RoleType } from 'src/routes/auth/auth.dto';
 export class UserRepository {
     constructor(private readonly prisma: PrismaService) {}
 
-    async create(
-        data: Prisma.UserCreateInput,
-    ): Promise<
-        Omit<User, 'password' | 'totpSecret' >
-    > {
+    async create(data: Prisma.UserCreateInput): Promise<Omit<User, 'password' | 'totpSecret'>> {
         return this.prisma.user.create({
             data,
             omit: {
@@ -79,7 +75,7 @@ export class UserRepository {
         });
     }
 
-    async findByEmailWithRole(email: string): Promise<(User & { role: RoleType }) | null> {
+    async findByEmailWithRole(email: string): Promise<any> {
         return this.prisma.user.findUnique({
             where: { email },
             include: { role: true },

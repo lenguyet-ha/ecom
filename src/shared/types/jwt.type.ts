@@ -1,13 +1,19 @@
-export interface TokenPayload {
+export interface AccessTokenPayloadCreate {
     userId: number;
-    iat: number;
-    exp: number;
     roleId: number;
     roleName: string;
 }
 
-export interface RefreshTokenPayload {
-    userId: number;
-    iat: number;
+export interface AccessTokenPayload extends AccessTokenPayloadCreate {
     exp: number;
+    iat: number;
+}
+
+export interface RefreshTokenPayloadCreate {
+    userId: number;
+}
+
+export interface RefreshTokenPayload extends RefreshTokenPayloadCreate {
+    exp: number;
+    iat: number;
 }
