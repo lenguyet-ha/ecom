@@ -31,4 +31,10 @@ export class AuthController {
     async logout(@Body() body: any) {
         return await this.authService.logout(body.refreshToken);
     }
+
+    @Post('forgot-password')
+    @HttpCode(HttpStatus.OK)
+    async forgotPassword(@Body() body: any) {
+        return await this.authService.forgotPassword(body);
+    }
 }
