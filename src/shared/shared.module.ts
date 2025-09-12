@@ -10,14 +10,16 @@ import { AuthenticationGuard } from 'src/shared/guards/authentication.guard';
 import { UserRepository } from './repositories/user.repository';
 import { DeviceRepository } from './repositories/device.repository';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
+import { LanguageRepo } from './repositories/language.repo';
 
 const sharedServices = [
-    PrismaService, 
-    HashingService, 
+    PrismaService,
+    HashingService,
     TokenService,
     UserRepository,
     DeviceRepository,
-    RefreshTokenRepository
+    RefreshTokenRepository,
+    LanguageRepo,
 ];
 
 @Global()

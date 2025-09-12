@@ -17,3 +17,9 @@ export interface RefreshTokenPayload extends RefreshTokenPayloadCreate {
     exp: number;
     iat: number;
 }
+
+export interface TokenPayload {
+    userId: number;
+    exp: number;
+    iat: number;
+}
