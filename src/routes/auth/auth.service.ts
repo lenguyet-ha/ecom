@@ -97,6 +97,7 @@ export class AuthService {
     }
     async login(body: any) {
         const user = await this.userRepository.findByEmailWithRole(body.email);
+        console.log(user);
 
         if (!user) {
             throw new UnprocessableEntityException([
@@ -148,7 +149,6 @@ export class AuthService {
 
     async refreshToken({ refreshToken }: { refreshToken: string }) {
         try {
-            // 1. Kiểm tra refreshToken có hợp lệ không
             const { userId } = await this.tokenService.verifyRefreshToken(refreshToken);
             // 2. Kiểm tra refreshToken có tồn tại trong database không
             const refreshTokenInDb = await this.refreshTokenRepository.findUniqueRefreshTokenIncludeUserRole({

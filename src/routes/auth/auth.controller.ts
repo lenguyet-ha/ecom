@@ -24,7 +24,7 @@ export class AuthController {
     @Post('refresh-token')
     @HttpCode(HttpStatus.OK)
     async refreshToken(@Body() body: any) {
-        return await this.authService.refreshToken(body.refreshToken);
+        return await this.authService.refreshToken(body);
     }
     @Post('logout')
     @HttpCode(HttpStatus.OK)
