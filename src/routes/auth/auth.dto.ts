@@ -75,6 +75,25 @@ export const RoleSchema = z.object({
     updatedAt: z.iso.datetime(),
 });
 
+export const ForgotPasswordBodySchema = z
+    .object({
+        email: z.string().email(),
+        code: z.string().length(6),
+        newPassword: z.string().min(6).max(100),
+        confirmNewPassword: z.string().min(6).max(100),
+    })
+    .strict()
+    .superRefine(({ newPassword, confirmNewPassword }, ctx) => {
+        if (newPassword !== confirmNewPassword) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Mật khẩu và mật khẩu xác nhận phải giống nhau',
+            });
+        }
+    });
+
+export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBodySchema>;
+
 export type RoleType = z.infer<typeof RoleSchema>;
 
 export class RegisterBodyDTO extends createZodDto(RegisterBodySchema) {}

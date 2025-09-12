@@ -15,6 +15,8 @@ import { RefreshTokenRepository } from 'src/shared/repositories/refresh-token.re
 import envConfig from 'src/shared/config';
 import { addMilliseconds } from 'date-fns';
 import ms from 'ms';
+import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant';
+import { ForgotPasswordBodyType } from './auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -27,29 +29,33 @@ export class AuthService {
         private readonly refreshTokenRepository: RefreshTokenRepository,
     ) {}
 
+    async validateVerifycationCode(email: string, code: string, type: string) {
+        const verifycationCode = await this.userRepository.findVerificationCode({
+            email,
+            code,
+            type: TypeOfVerificationCode.REGISTER,
+        });
+        if (!verifycationCode || verifycationCode.code !== code) {
+            throw new UnprocessableEntityException([
+                {
+                    message: 'Mã OTP không hợp lệ',
+                    paht: 'code',
+                },
+            ]);
+        }
+        if (verifycationCode.expiresAt < new Date()) {
+            throw new UnprocessableEntityException([
+                {
+                    message: 'Mã OTP đã hết hạn',
+                    paht: 'code',
+                },
+            ]);
+        }
+    }
+
     async register(body: any) {
         try {
-            // const verifycationCode = await this.userRepository.findVerificationCode({
-            //     email: body.email,
-            //     code: body.code,
-            //     type: TypeOfVerificationCode.REGISTER,
-            // });
-            // if (!verifycationCode || verifycationCode.code !== body.code) {
-            //     throw new UnprocessableEntityException([
-            //         {
-            //             message: 'Mã OTP không hợp lệ',
-            //             paht: 'code',
-            //         },
-            //     ]);
-            // }
-            // if (verifycationCode.expiresAt < new Date()) {
-            //     throw new UnprocessableEntityException([
-            //         {
-            //             message: 'Mã OTP đã hết hạn',
-            //             paht: 'code',
-            //         },
-            //     ]);
-            // }
+            // await this.validateVerifycationCode(body.email, body.code, TypeOfVerificationCode.REGISTER);
             const clientRoleId = await this.roleService.getClientRoleId();
             const hashedPassword = await this.hashingService.hash(body.password);
             const newUser = await this.userRepository.create({
@@ -178,5 +184,22 @@ export class AuthService {
         } catch (error) {
             throw new BadRequestException('Invalid refresh token');
         }
+    }
+
+    async forgotPassword(body: ForgotPasswordBodyType) {
+        const { email, code, newPassword } = body;
+        const user = await this.userRepository.findByEmail(email);
+        if (!user) {
+            throw new UnprocessableEntityException([
+                {
+                    message: 'Email không tồn tại',
+                },
+            ]);
+        }
+        // await this.validateVerifycationCode(email, code, TypeOfVerificationCode.FORGOT_PASSWORD);
+
+        const hashedPassword = await this.hashingService.hash(newPassword);
+        await this.userRepository.update(user.id, { password: hashedPassword });
+        return { message: 'Đổi mật khẩu thành công' };
     }
 }
