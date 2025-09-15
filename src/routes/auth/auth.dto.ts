@@ -70,9 +70,9 @@ export const RoleSchema = z.object({
     isActive: z.boolean(),
     createdById: z.number().nullable(),
     updatedById: z.number().nullable(),
-    deletedAt: z.iso.datetime().nullable(),
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
+    deletedAt: z.date().nullable(),
+    createdAt: z.date(),
+    updatedAt: z.date(),
 });
 
 export const ForgotPasswordBodySchema = z

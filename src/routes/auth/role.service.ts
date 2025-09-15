@@ -13,7 +13,7 @@ export class RoleService {
             return this.clientRoleId;
         }
         const role = await this.prismaService.role.findFirst({
-            where: { name: RoleName.CLIENT },
+            where: { name: RoleName.CLIENT, deletedAt: null },
         });
         if (!role) {
             throw new Error('Client role not found');

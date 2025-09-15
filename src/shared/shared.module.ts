@@ -12,6 +12,7 @@ import { DeviceRepository } from './repositories/device.repository';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 import { LanguageRepo } from './repositories/language.repo';
 import { PermissionRepo } from './repositories/permission.repo';
+import { RoleRepo } from './repositories/role.repository';
 
 const sharedServices = [
     PrismaService,
@@ -22,6 +23,7 @@ const sharedServices = [
     RefreshTokenRepository,
     LanguageRepo,
     PermissionRepo,
+    RoleRepo,
 ];
 
 @Global()
