@@ -2,9 +2,12 @@ import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/
 import { ZodSerializerDto } from 'nestjs-zod';
 import { CreateRoleBodyDTO, GetRoleParamsDTO, GetRolesQueryDTO, UpdateRoleBodyDTO } from 'src/routes/role/role.dto';
 import { RoleService } from 'src/routes/role/role.service';
+import { AuthType } from 'src/shared/constants/auth.constant';
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator';
+import { Auth } from 'src/shared/decorators/auth.decorator';
 
 @Controller('roles')
+@Auth([AuthType.Bearer])
 export class RoleController {
     constructor(private readonly roleService: RoleService) {}
 

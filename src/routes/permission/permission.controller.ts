@@ -9,9 +9,12 @@ import {
     UpdatePermissionBodyDTO,
 } from 'src/routes/permission/permission.dto';
 import { PermissionService } from 'src/routes/permission/permission.service';
+import { AuthType } from 'src/shared/constants/auth.constant';
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator';
+import { Auth } from 'src/shared/decorators/auth.decorator';
 
 @Controller('permissions')
+@Auth([AuthType.Bearer])
 export class PermissionController {
     constructor(private readonly permissionService: PermissionService) {}
 
