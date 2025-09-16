@@ -48,6 +48,10 @@ export const UpdateRoleBodySchema = RoleSchema.pick({
     })
     .strict();
 
+export const RolePermissionsSchema = RoleSchema.extend({
+    permissions: z.array(PermissionSchema),
+});
+
 export type RoleType = z.infer<typeof RoleSchema>;
 export type RoleWithPermissionsType = z.infer<typeof RoleWithPermissionsSchema>;
 export type GetRolesResType = z.infer<typeof GetRolesResSchema>;
@@ -71,3 +75,5 @@ export class CreateRoleResDTO extends createZodDto(CreateRoleResSchema) {}
 export class UpdateRoleBodyDTO extends createZodDto(UpdateRoleBodySchema) {}
 
 export class GetRolesQueryDTO extends createZodDto(GetRolesQuerySchema) {}
+
+export type RolePermissionsType = z.infer<typeof RolePermissionsSchema>;

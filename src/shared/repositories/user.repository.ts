@@ -4,7 +4,6 @@ import { User, Prisma, VerificationCode } from '@prisma/client';
 import { TypeOfVerificationCodeType } from 'src/shared/constants/auth.constant';
 import { RoleType, UserType } from 'src/routes/auth/auth.dto';
 import { PermissionType } from 'src/routes/permission/permission.dto';
-import { UpdateMeBodyType } from 'src/routes/profile/profile.dto';
 
 type UserIncludeRolePermissionsType = UserType & { role: RoleType & { permissions: PermissionType[] } };
 
@@ -47,7 +46,7 @@ export class UserRepository {
 
     async update(id: number, data: Partial<UserType>): Promise<User> {
         return this.prisma.user.update({
-            where: { id },
+            where: { id, deletedAt: null },
             data,
         });
     }
@@ -87,14 +86,17 @@ export class UserRepository {
 
     async findByEmailWithRole(email: string): Promise<any> {
         return this.prisma.user.findUnique({
-            where: { email },
+            where: { email, deletedAt: null },
             include: { role: true },
         });
     }
 
     async findUniqueIncludeRolePermissions(where: WhereUniqueUserType): Promise<UserIncludeRolePermissionsType | null> {
         const result = await this.prisma.user.findUnique({
-            where,
+            where: {
+                ...where,
+                deletedAt: null,
+            },
             include: {
                 role: {
                     include: {

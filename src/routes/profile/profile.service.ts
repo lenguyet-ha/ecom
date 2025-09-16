@@ -16,7 +16,6 @@ export class ProfileService {
     async getProfile(userId: number) {
         const user = await this.sharedUserRepository.findUniqueIncludeRolePermissions({
             id: userId,
-            deletedAt: null,
         });
 
         if (!user) {

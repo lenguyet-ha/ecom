@@ -13,7 +13,7 @@ import { RoleName } from '../constants/role.constant';
 @Injectable()
 export class RoleRepo {
     private clientRoleId: number | null = null;
-
+    private adminRoleId: number | null = null;
     constructor(private prismaService: PrismaService) {}
 
     async list(pagination: GetRolesQueryType): Promise<GetRolesResType> {
@@ -134,6 +134,19 @@ export class RoleRepo {
             throw new Error('Client role not found');
         }
         this.clientRoleId = role.id;
+        return role.id;
+    }
+    async getAdminRoleId() {
+        if (this.adminRoleId) {
+            return this.adminRoleId;
+        }
+        const role = await this.prismaService.role.findFirst({
+            where: { name: RoleName.ADMIN, deletedAt: null },
+        });
+        if (!role) {
+            throw new Error('Client role not found');
+        }
+        this.adminRoleId = role.id;
         return role.id;
     }
 }
