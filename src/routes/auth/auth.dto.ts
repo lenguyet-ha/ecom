@@ -2,8 +2,9 @@ import { UserStatus } from '@prisma/client';
 import { createZodDto } from 'nestjs-zod';
 import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant';
 import z from 'zod';
+import { PermissionSchema } from '../permission/permission.dto';
 
-const UserSchema = z.object({
+export const UserSchema = z.object({
     id: z.number(),
     email: z.string(),
     name: z.string(),
@@ -92,9 +93,46 @@ export const ForgotPasswordBodySchema = z
         }
     });
 
+/**
+ * Áp dụng cho Response của api GET('profile') và GET('users/:userId')
+ */
+export const GetUserProfileResSchema = UserSchema.omit({
+    password: true,
+    totpSecret: true,
+}).extend({
+    role: RoleSchema.pick({
+        id: true,
+        name: true,
+    }).extend({
+        permissions: z.array(
+            PermissionSchema.pick({
+                id: true,
+                name: true,
+                module: true,
+                path: true,
+                method: true,
+            }),
+        ),
+    }),
+});
+
+/**
+ * Áp dụng cho Response của api PUT('profile') và PUT('users/:userId')
+ */
+export const UpdateProfileResSchema = UserSchema.omit({
+    password: true,
+    totpSecret: true,
+});
+
 export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBodySchema>;
 
 export type RoleType = z.infer<typeof RoleSchema>;
+
+export type UserType = z.infer<typeof UserSchema>;
+
+export type GetUserProfileResType = z.infer<typeof GetUserProfileResSchema>;
+
+export type UpdateProfileResType = z.infer<typeof UpdateProfileResSchema>;
 
 export class RegisterBodyDTO extends createZodDto(RegisterBodySchema) {}
 
@@ -103,3 +141,13 @@ export class RegisterResDTO extends createZodDto(RegisterResSchema) {}
 export class VerificationCodeDTO extends createZodDto(VerificationCode) {}
 
 export class SendOtpDTO extends createZodDto(SendOTPBodySchema) {}
+
+/**
+ * Áp dụng cho Response của api GET('profile') và GET('users/:userId')
+ */
+export class GetUserProfileResDTO extends createZodDto(GetUserProfileResSchema) {}
+
+/**
+ * Áp dụng cho Response của api PUT('profile') và PUT('users/:userId')
+ */
+export class UpdateProfileResDTO extends createZodDto(UpdateProfileResSchema) {}
