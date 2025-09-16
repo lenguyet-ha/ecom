@@ -8,9 +8,12 @@ import {
     UpdateRoleBodyType,
 } from 'src/routes/role/role.dto';
 import { PrismaService } from 'src/shared/services/prisma.service';
+import { RoleName } from '../constants/role.constant';
 
 @Injectable()
 export class RoleRepo {
+    private clientRoleId: number | null = null;
+
     constructor(private prismaService: PrismaService) {}
 
     async list(pagination: GetRolesQueryType): Promise<GetRolesResType> {
@@ -119,5 +122,18 @@ export class RoleRepo {
                       deletedById,
                   },
               });
+    }
+    async getClientRoleId(): Promise<number> {
+        if (this.clientRoleId !== null) {
+            return this.clientRoleId;
+        }
+        const role = await this.prismaService.role.findFirst({
+            where: { name: RoleName.CLIENT, deletedAt: null },
+        });
+        if (!role) {
+            throw new Error('Client role not found');
+        }
+        this.clientRoleId = role.id;
+        return role.id;
     }
 }

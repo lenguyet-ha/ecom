@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { HashingService } from 'src/shared/services/hashing.service';
 import { TokenService } from 'src/shared/services/token.service';
-import { RoleService } from './role.service';
 import { generateOTP, isUniqueConstraintPrismaError } from 'src/shared/helpers';
 import { UserRepository } from 'src/shared/repositories/user.repository';
 import { DeviceRepository } from 'src/shared/repositories/device.repository';
@@ -17,13 +16,14 @@ import { addMilliseconds } from 'date-fns';
 import ms from 'ms';
 import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant';
 import { ForgotPasswordBodyType } from './auth.dto';
+import { RoleRepo } from 'src/shared/repositories/role.repository';
 
 @Injectable()
 export class AuthService {
     constructor(
         private readonly hashingService: HashingService,
         private readonly tokenService: TokenService,
-        private readonly roleService: RoleService,
+        private readonly roleRepo: RoleRepo,
         private readonly userRepository: UserRepository,
         private readonly deviceRepository: DeviceRepository,
         private readonly refreshTokenRepository: RefreshTokenRepository,
@@ -56,7 +56,7 @@ export class AuthService {
     async register(body: any) {
         try {
             // await this.validateVerifycationCode(body.email, body.code, TypeOfVerificationCode.REGISTER);
-            const clientRoleId = await this.roleService.getClientRoleId();
+            const clientRoleId = await this.roleRepo.getClientRoleId();
             const hashedPassword = await this.hashingService.hash(body.password);
             const newUser = await this.userRepository.create({
                 name: body.name,
