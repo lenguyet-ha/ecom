@@ -24,6 +24,11 @@ const configSchema = z.object({
     ADMIN_PASSWORD: z.string(),
     ADMIN_PHONE_NUMBER: z.string(),
     OTP_EXPIRES_IN: z.string().default('5m'),
+    PREFIX_STATIC_ENPOINT: z.string().default('media/static'),
+    S3_BUCKET_NAME: z.string(),
+    S3_REGION: z.string(),
+    S3_ACCESS_KEY: z.string(),
+    S3_SECRET_KEY: z.string(),
 });
 
 const configServer = configSchema.safeParse(process.env);

@@ -1,6 +1,8 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterBodyDTO, RegisterResDTO, SendOtpDTO } from './auth.dto';
+import { Auth } from 'src/shared/decorators/auth.decorator';
+import { AuthType } from 'src/shared/constants/auth.constant';
 
 @Controller('auth')
 export class AuthController {
@@ -18,6 +20,7 @@ export class AuthController {
         return this.authService.sendOTP(body);
     }
     @Post('login')
+    @Auth([AuthType.None])
     async login(@Body() body: any) {
         return await this.authService.login(body);
     }
