@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
 import { AUTH_TYPE_KEY } from './auth.decorator';
-import { AuthType } from '../constants/auth.constant';
+import { AuthType, ConditionGuard } from '../constants/auth.constant';
 
-export const IsPublic = () => SetMetadata(AUTH_TYPE_KEY, { authTypes: [AuthType.None] });
+export const IsPublic = () => SetMetadata(AUTH_TYPE_KEY, { authTypes: [AuthType.None], options: { condition: ConditionGuard.And } });

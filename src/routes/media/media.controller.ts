@@ -67,8 +67,7 @@ export class MediaController {
     }
 
     @Post('images/upload/presigned-url')
-    @Auth([AuthType.Bearer])
-    //@IsPublic()
+    @IsPublic()
     async createPresignedUrl(@Body() body: { filename: string }) {
         return this.mediaService.getPresignUrl(body);
     }
