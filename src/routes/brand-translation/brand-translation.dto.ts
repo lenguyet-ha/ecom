@@ -13,15 +13,19 @@ export const BrandTranslationSchema = z.object({
     deletedAt: z.date().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
-    brand: z.object({
-        id: z.number(),
-        name: z.string(),
-        logo: z.string(),
-    }).optional(),
-    language: z.object({
-        id: z.string(),
-        name: z.string(),
-    }).optional(),
+    brand: z
+        .object({
+            id: z.number(),
+            name: z.string(),
+            logo: z.string(),
+        })
+        .optional(),
+    language: z
+        .object({
+            id: z.string(),
+            name: z.string(),
+        })
+        .optional(),
 });
 
 export const GetBrandTranslationDetailResSchema = BrandTranslationSchema;
@@ -43,13 +47,13 @@ export const GetBrandTranslationsQuerySchema = z
 
 export const GetBrandTranslationParamsSchema = z
     .object({
-        brandTranslationId: z.string().transform((val) => parseInt(val, 10)),
+        brandTranslationId: z.coerce.number(),
     })
     .strict();
 
 export const GetBrandTranslationsByBrandParamsSchema = z
     .object({
-        brandId: z.string().transform((val) => parseInt(val, 10)),
+        brandId: z.coerce.number(),
     })
     .strict();
 
@@ -63,7 +67,9 @@ export const CreateBrandTranslationBodySchema = BrandTranslationSchema.pick({
 export const UpdateBrandTranslationBodySchema = BrandTranslationSchema.pick({
     name: true,
     description: true,
-}).partial().strict();
+})
+    .partial()
+    .strict();
 
 export type BrandTranslationType = z.infer<typeof BrandTranslationSchema>;
 export type GetBrandTranslationsResType = z.infer<typeof GetBrandTranslationsResSchema>;

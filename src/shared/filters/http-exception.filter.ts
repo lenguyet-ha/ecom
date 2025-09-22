@@ -10,10 +10,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
         const status = exception.getStatus();
 
         const exceptionResponse = exception.getResponse();
-        const message =
+        let message =
             typeof exceptionResponse === 'string'
                 ? exceptionResponse
                 : (exceptionResponse as any).message || exception.message;
+
+        // Handle array of validation errors
+        if (Array.isArray(message)) {
+            message = message[0]?.message || message;
+        }
 
         response.status(status).json({
             message,

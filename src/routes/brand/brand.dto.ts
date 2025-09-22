@@ -11,20 +11,24 @@ export const BrandSchema = z.object({
     deletedAt: z.date().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
-    brandTranslations: z.array(z.object({
-        id: z.number(),
-        brandId: z.number(),
-        languageId: z.string(),
-        name: z.string().max(500),
-        description: z.string(),
-        language: z.object({
-            id: z.string(),
-            name: z.string(),
-        }),
-        deletedAt: z.date().nullable(),
-        createdAt: z.date(),
-        updatedAt: z.date(),
-    })).optional(),
+    brandTranslations: z
+        .array(
+            z.object({
+                id: z.number(),
+                brandId: z.number(),
+                languageId: z.string(),
+                name: z.string().max(500),
+                description: z.string(),
+                language: z.object({
+                    id: z.string(),
+                    name: z.string(),
+                }),
+                deletedAt: z.date().nullable(),
+                createdAt: z.date(),
+                updatedAt: z.date(),
+            }),
+        )
+        .optional(),
 });
 
 export const GetBrandDetailResSchema = BrandSchema;
@@ -46,7 +50,7 @@ export const GetBrandsQuerySchema = z
 
 export const GetBrandParamsSchema = z
     .object({
-        brandId: z.string().transform((val) => parseInt(val, 10)),
+        brandId: z.coerce.number(),
     })
     .strict();
 
@@ -58,7 +62,9 @@ export const CreateBrandBodySchema = BrandSchema.pick({
 export const UpdateBrandBodySchema = BrandSchema.pick({
     logo: true,
     name: true,
-}).partial().strict();
+})
+    .partial()
+    .strict();
 
 export type BrandType = z.infer<typeof BrandSchema>;
 export type GetBrandsResType = z.infer<typeof GetBrandsResSchema>;
