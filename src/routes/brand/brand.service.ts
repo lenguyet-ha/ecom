@@ -9,8 +9,27 @@ export class BrandService {
     constructor(private brandRepository: BrandRepository) {}
 
     async list(pagination: GetBrandsQueryType) {
-        const data = await this.brandRepository.list(pagination);
-        return data;
+        const result = await this.brandRepository.list(pagination);
+
+        // Serialize data to exclude unwanted fields and filter Vietnamese translations
+        const serializedData = result.data.map((brand) => {
+            const vietnameseTranslation = brand.brandTranslations?.find(
+                (translation) => translation.languageId === 'vi',
+            );
+
+            return {
+                id: brand.id,
+                logo: brand.logo,
+                name: brand.name,
+
+                description: vietnameseTranslation?.description,
+            };
+        });
+
+        return {
+            ...result,
+            data: serializedData,
+        };
     }
 
     async findById(id: number) {
@@ -18,7 +37,17 @@ export class BrandService {
         if (!brand) {
             throw BrandNotFoundException;
         }
-        return brand;
+
+        // Filter brandTranslations to only include Vietnamese translations and serialize
+        const vietnameseTranslation = brand.brandTranslations?.find((translation) => translation.languageId === 'vi');
+
+        // Serialize response to exclude unwanted fields
+        return {
+            id: brand.id,
+            logo: brand.logo,
+            name: brand.name,
+            description: vietnameseTranslation?.description,
+        };
     }
 
     async create({ data, createdById }: { data: CreateBrandBodyType; createdById: number }) {

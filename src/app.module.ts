@@ -15,6 +15,8 @@ import { UserModule } from './routes/user/user.module';
 import { MediaModule } from './routes/media/media.module';
 import { BrandModule } from './routes/brand/brand.module';
 import { BrandTranslationModule } from './routes/brand-translation/brand-translation.module';
+import { CategoryModule } from './routes/category/category.module';
+import { CategoryTranslationModule } from './routes/category-translation/category-translation.module';
 
 @Module({
     imports: [
@@ -28,6 +30,8 @@ import { BrandTranslationModule } from './routes/brand-translation/brand-transla
         MediaModule,
         BrandModule,
         BrandTranslationModule,
+        CategoryModule,
+        CategoryTranslationModule,
     ],
     controllers: [AppController],
     providers: [
