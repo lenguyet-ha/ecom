@@ -17,6 +17,9 @@ import { BrandModule } from './routes/brand/brand.module';
 import { BrandTranslationModule } from './routes/brand-translation/brand-translation.module';
 import { CategoryModule } from './routes/category/category.module';
 import { CategoryTranslationModule } from './routes/category-translation/category-translation.module';
+import { ProductTranslationModule } from './routes/product/product-translation/product-translation.module';
+import { ProductModule } from './routes/product/product.module';
+import { ManageProductController } from './routes/product/product-manage.controller';
 
 @Module({
     imports: [
@@ -32,6 +35,8 @@ import { CategoryTranslationModule } from './routes/category-translation/categor
         BrandTranslationModule,
         CategoryModule,
         CategoryTranslationModule,
+        ProductModule,
+        ProductTranslationModule,
     ],
     controllers: [AppController],
     providers: [
