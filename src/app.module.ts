@@ -19,7 +19,7 @@ import { CategoryModule } from './routes/category/category.module';
 import { CategoryTranslationModule } from './routes/category-translation/category-translation.module';
 import { ProductTranslationModule } from './routes/product/product-translation/product-translation.module';
 import { ProductModule } from './routes/product/product.module';
-import { ManageProductController } from './routes/product/product-manage.controller';
+import { CartModule } from './routes/cart/cart.module';
 
 @Module({
     imports: [
@@ -37,6 +37,7 @@ import { ManageProductController } from './routes/product/product-manage.control
         CategoryTranslationModule,
         ProductModule,
         ProductTranslationModule,
+        CartModule,
     ],
     controllers: [AppController],
     providers: [

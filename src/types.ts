@@ -1,3 +1,4 @@
+import { ProductTranslationType } from './routes/product/product-translation/product-translation.dto';
 import { VariantsType } from './routes/product/product.dto';
 
 declare global {
@@ -5,4 +6,10 @@ declare global {
     namespace PrismaJson {
         type Variants = VariantsType;
     }
+    type ProductTranslations = Pick<ProductTranslationType, 'id' | 'name' | 'description' | 'languageId'>[];
+    type Receiver = {
+        name: string;
+        phone: string;
+        address: string;
+    };
 }
