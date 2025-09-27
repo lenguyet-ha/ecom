@@ -96,7 +96,7 @@ export const CreateOrderBodySchema = z
     )
     .min(1);
 
-export const CreateOrderResSchema = z.object({ data: z.array(OrderSchema) });
+export const CreateOrderResSchema = z.object({ data: z.array(OrderSchema), paymentId: z.number() });
 
 export const CancelOrderResSchema = OrderSchema;
 
@@ -108,6 +108,11 @@ export const GetOrderParamsSchema = z
 
 export const CancelOrderBodySchema = z.object({});
 
+export const OrderIncludeProductSKUSnapshotSchema = OrderSchema.extend({
+    items: z.array(ProductSKUSnapshotSchema),
+});
+
+export type OrderIncludeProductSKUSnapshotType = z.infer<typeof OrderIncludeProductSKUSnapshotSchema>;
 export type GetOrderListResType = z.infer<typeof GetOrderListResSchema>;
 export type GetOrderListQueryType = z.infer<typeof GetOrderListQuerySchema>;
 export type GetOrderDetailResType = z.infer<typeof GetOrderDetailResSchema>;
