@@ -42,8 +42,8 @@ const sharedServices = [
     ProductRepository,
     ProductTranslationRepo,
     CartRepo,
-    OrderRepo,
-    PaymentRepo,
+  //  OrderRepo,
+   // PaymentRepo,
 ];
 
 @Global()
