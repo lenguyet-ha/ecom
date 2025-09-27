@@ -27,8 +27,12 @@ export class CartController {
     }
 
     @Put(':cartItemId')
-    updateCartItem(@Param() param: GetCartItemParamsDTO, @Body() body: UpdateCartItemBodyDTO) {
-        return this.cartService.updateCartItem(param.cartItemId, body);
+    updateCartItem(
+        @ActiveUser('userId') userId: number,
+        @Param() param: GetCartItemParamsDTO,
+        @Body() body: UpdateCartItemBodyDTO,
+    ) {
+        return this.cartService.updateCartItem(param.cartItemId, body, userId);
     }
 
     @Post('delete')
