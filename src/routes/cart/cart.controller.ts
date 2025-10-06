@@ -5,6 +5,7 @@ import {
     AddToCartBodyDTO,
     DeleteCartBodyDTO,
     GetCartItemParamsDTO,
+    GetCartQueryDTO,
     GetCartResDTO,
     UpdateCartItemBodyDTO,
 } from 'src/routes/cart/cart.dto';
@@ -16,7 +17,7 @@ export class CartController {
     @Get()
     getCart(
         @ActiveUser('userId') userId: number,
-        @Query() query: { page: number; limit: number },
+        @Query() query: GetCartQueryDTO,
     ): Promise<GetCartResDTO> {
         return this.cartService.getCart(userId, query);
     }

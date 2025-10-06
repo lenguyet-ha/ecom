@@ -18,6 +18,11 @@ export const GetCartItemParamsSchema = z.object({
     cartItemId: z.coerce.number(),
 });
 
+export const GetCartQuerySchema = z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().default(10),
+});
+
 export const CartItemDetailSchema = CartItemSchema.extend({
     sku: SKUSchema.extend({
         product: ProductSchema.extend({
@@ -49,6 +54,7 @@ export const DeleteCartBodySchema = z
 
 export type CartItemType = z.infer<typeof CartItemSchema>;
 export type GetCartItemParamType = z.infer<typeof GetCartItemParamsSchema>;
+export type GetCartQueryType = z.infer<typeof GetCartQuerySchema>;
 export type CartItemDetailType = z.infer<typeof CartItemDetailSchema>;
 export type GetCartResType = z.infer<typeof GetCartResSchema>;
 export type AddToCartBodyType = z.infer<typeof AddToCartBodySchema>;
@@ -60,6 +66,9 @@ export class CartItemDTO extends createZodDto(CartItemSchema) {}
 export class GetCartResDTO extends createZodDto(GetCartResSchema) {}
 
 export class GetCartItemParamsDTO extends createZodDto(GetCartItemParamsSchema) {}
+
+export class GetCartQueryDTO extends createZodDto(GetCartQuerySchema) {}
+
 export class AddToCartBodyDTO extends createZodDto(AddToCartBodySchema) {}
 
 export class UpdateCartItemBodyDTO extends createZodDto(UpdateCartItemBodySchema) {}
