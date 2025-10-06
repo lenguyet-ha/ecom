@@ -3,13 +3,13 @@ import { AuthService } from './auth.service';
 import { RegisterBodyDTO, RegisterResDTO, SendOtpDTO } from './auth.dto';
 import { Auth } from 'src/shared/decorators/auth.decorator';
 import { AuthType } from 'src/shared/constants/auth.constant';
-
+import { IsPublic } from 'src/shared/decorators/public.decorator';
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
     @Post('register')
-    // @ZodResponse({ type: RegisterResDTO })
+    @IsPublic()
     async register(@Body() body: RegisterBodyDTO) {
         return await this.authService.register(body);
         // return { userId: 123, email: 'test@example.com', password: 'secret', createdAt: new Date() };
