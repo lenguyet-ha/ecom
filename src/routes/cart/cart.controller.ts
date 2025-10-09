@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Query, Delete } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator';
 import {
@@ -30,13 +30,13 @@ export class CartController {
     @Put(':cartItemId')
     updateCartItem(
         @ActiveUser('userId') userId: number,
-        @Param() param: GetCartItemParamsDTO,
+       @Param() param: GetCartItemParamsDTO,
         @Body() body: UpdateCartItemBodyDTO,
     ) {
         return this.cartService.updateCartItem(param.cartItemId, body, userId);
     }
 
-    @Post('delete')
+    @Delete()
     deleteCart(@Body() body: DeleteCartBodyDTO, @ActiveUser('userId') userId: number) {
         return this.cartService.deleteCart(userId, body);
     }
