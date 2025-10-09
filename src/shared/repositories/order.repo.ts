@@ -141,18 +141,18 @@ export class OrderRepo {
         cartItems.forEach((item) => {
             cartItemMap.set(item.id, item);
         });
-        const isValidShop = body.every((item) => {
-            const bodyCartItemIds = item.cartItemIds;
-            return bodyCartItemIds.every((cartItemId) => {
-                // Neu đã đến bước này thì cartItem luôn luôn có giá trị
-                // Vì chúng ta đã so sánh với allBodyCartItems.length ở trên rồi
-                const cartItem = cartItemMap.get(cartItemId)!;
-                return item.shopId === cartItem.sku.createdById;
-            });
-        });
-        if (!isValidShop) {
-            throw SKUNotBelongToShopException;
-        }
+        // const isValidShop = body.every((item) => {
+        //     const bodyCartItemIds = item.cartItemIds;
+        //     return bodyCartItemIds.every((cartItemId) => {
+        //         // Neu đã đến bước này thì cartItem luôn luôn có giá trị
+        //         // Vì chúng ta đã so sánh với allBodyCartItems.length ở trên rồi
+        //         const cartItem = cartItemMap.get(cartItemId)!;
+        //         return item.shopId === cartItem.sku.createdById;
+        //     });
+        // });
+        // if (!isValidShop) {
+        //     throw SKUNotBelongToShopException;
+        // }
 
         // 5. Tạo order và xóa cartItem trong transaction để đảm bảo tính toàn vẹn dữ liệu
         const [paymentId, orders] = await this.prismaService.$transaction(async (tx) => {

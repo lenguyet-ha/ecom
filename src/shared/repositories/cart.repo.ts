@@ -123,14 +123,14 @@ export class CartRepo {
                     images: item.sku.product.images,
                     variants: item.sku.product.variants,
                     description: item.sku.product.productTranslations?.[0]?.description ?? null,
-                    createdById: item.sku.product.createdById,
+                    createdBy: item.sku.product.createdBy,
                 },
             },
         }));
 
         // Group by shop (createdById)
         const groupedByShop = transformedData.reduce((acc: any, item: any) => {
-            const shopId = item.sku.product.createdById;
+            const shopId = item.sku.product.createdBy.id;
             if (!acc[shopId]) {
                 acc[shopId] = {
                     shop: item.sku.product.createdBy,

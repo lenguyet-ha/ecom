@@ -41,6 +41,10 @@ export class ProductRepository {
             };
         }
 
+        if (query.createdById) {
+            where.createdById = query.createdById;
+        }
+
         if (query.isPublished === true) {
             where.publishedAt = query.isPublished ? { lte: new Date(), not: null } : undefined;
         } else if (query.isPublished === false) {
@@ -91,6 +95,13 @@ export class ProductRepository {
                     skus: {
                         where: { deletedAt: null },
                     },
+                    createdBy: {
+                        select: {
+                            id: true,
+                            name: true,
+                            avatar: true,
+                        },
+                    },
                 },
                 skip,
                 take: limit,
@@ -113,6 +124,13 @@ export class ProductRepository {
                 images: product.images,
                 variants: product.variants,
                 createdById: product.createdById,
+                shopInfo: product.createdBy
+                    ? {
+                          id: product.createdBy.id,
+                          name: product.createdBy.name,
+                          avatar: product.createdBy.avatar,
+                      }
+                    : null,
                 categories: product.categories.map((cat: any) => ({
                     id: cat.id,
                     name: cat.name,
@@ -171,6 +189,14 @@ export class ProductRepository {
                         deletedAt: null,
                     },
                 },
+                // [THÊM VÀO] Lấy thông tin người tạo sản phẩm
+                createdBy: {
+                    select: {
+                        id: true,
+                        name: true,
+                        avatar: true,
+                    },
+                },
             },
         });
 
@@ -190,6 +216,15 @@ export class ProductRepository {
             variants: result.variants,
             description: result.productTranslations?.[0]?.description ?? null,
             createdById: result.createdById,
+
+            // [THÊM VÀO] Thêm trường shopInfo vào kết quả trả về
+            shopInfo: result.createdBy
+                ? {
+                      id: result.createdBy.id,
+                      name: result.createdBy.name,
+                      avatar: result.createdBy.avatar,
+                  }
+                : null,
 
             // skus (only core fields + timestamps)
             skus: result.skus.map((sku: any) => ({

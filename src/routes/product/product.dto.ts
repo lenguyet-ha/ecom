@@ -39,6 +39,12 @@ export const VariantsSchema = z.array(VariantSchema).superRefine((variants, ctx)
     }
 });
 
+export const ShopInfoSchema = z.object({
+    id: z.number(),
+    name: z.string(),
+    avatar: z.string().nullable(),
+});
+
 export const ProductSchema = z.object({
     id: z.number(),
     publishedAt: z.date().nullable(),
@@ -120,8 +126,12 @@ export const GetManageProductsQuerySchema = GetProductsQuerySchema.extend({
     isPublic: z.preprocess((value) => value === 'true', z.boolean()).optional(),
     createdById: z.coerce.number().int().positive(),
 });
+export const ProductWithShopSchema = ProductSchema.extend({
+    shopInfo: ShopInfoSchema.nullable(),
+});
+
 export const GetProductsResSchema = z.object({
-    data: z.array(ProductSchema),
+    data: z.array(ProductWithShopSchema),
     totalItems: z.number(),
     page: z.number(), // Số trang hiện tại
     limit: z.number(), // Số item trên 1 trang
