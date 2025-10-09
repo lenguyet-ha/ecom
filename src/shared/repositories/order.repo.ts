@@ -51,6 +51,11 @@ export class OrderRepo {
                 status: true,
                 shopId: true,
                 createdAt: true,
+                shop: {
+                    select: {
+                        name: true,
+                    },
+                },
                 items: {
                     select: {
                         id: true,
@@ -72,8 +77,17 @@ export class OrderRepo {
             orderBy: { createdAt: 'desc' },
         });
         const [data, totalItems] = await Promise.all([data$, totalItem$]);
+        const transformedData = data.map((item) => ({
+            id: item.id,
+            userId: item.userId,
+            status: item.status,
+            shopId: item.shopId,
+            shopName: item.shop?.name ?? null,
+            createdAt: item.createdAt,
+            items: item.items,
+        }));
         return {
-            data,
+            data: transformedData,
             page,
             limit,
             totalItems,
@@ -246,12 +260,31 @@ export class OrderRepo {
             },
             include: {
                 items: true,
+                shop: {
+                    select: {
+                        name: true,
+                    },
+                },
             },
         });
         if (!order) {
             throw OrderNotFoundException;
         }
-        return order;
+        return {
+            id: order.id,
+            userId: order.userId,
+            status: order.status,
+            receiver: order.receiver,
+            shopId: order.shopId,
+            createdById: order.createdById,
+            updatedById: order.updatedById,
+            deletedById: order.deletedById,
+            deletedAt: order.deletedAt,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+            items: order.items,
+            shopName: order.shop?.name ?? null,
+        };
     }
 
     async cancel(userId: number, orderId: number): Promise<CancelOrderResType> {

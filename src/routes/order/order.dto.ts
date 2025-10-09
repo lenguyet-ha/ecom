@@ -57,6 +57,7 @@ export const GetOrderListResSchema = z.object({
     data: z.array(
         OrderSchema.extend({
             items: z.array(ProductSKUSnapshotSchema),
+            shopName: z.string().nullable(),
         }).omit({
             receiver: true,
             deletedAt: true,
@@ -80,6 +81,7 @@ export const GetOrderListQuerySchema = z.object({
 
 export const GetOrderDetailResSchema = OrderSchema.extend({
     items: z.array(ProductSKUSnapshotSchema),
+    shopName: z.string().nullable(),
 });
 
 export const CreateOrderBodySchema = z
