@@ -3,6 +3,7 @@ import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from 'src/shared
 import { BrandNotFoundException } from './brand.error';
 import { CreateBrandBodyType, UpdateBrandBodyType, GetBrandsQueryType } from './brand.dto';
 import { BrandRepository } from 'src/shared/repositories/brand.repository';
+import { success } from 'zod';
 
 @Injectable()
 export class BrandService {
@@ -47,6 +48,7 @@ export class BrandService {
             logo: brand.logo,
             name: brand.name,
             description: vietnameseTranslation?.description,
+            brandTranslationId: vietnameseTranslation?.id
         };
     }
 
@@ -85,6 +87,7 @@ export class BrandService {
             // soft delete
             await this.brandRepository.delete(id, false);
             return {
+                success: true,
                 message: 'Delete successfully',
             };
         } catch (error) {

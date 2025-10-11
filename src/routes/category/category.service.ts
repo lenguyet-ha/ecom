@@ -66,6 +66,7 @@ export class CategoryService {
             parentCategoryId: category.parentCategoryId,
 
             description: vietnameseTranslation?.description,
+            categoryTranslationId: vietnameseTranslation?.id,
 
             parentCategory: category.parentCategory
                 ? {
@@ -84,12 +85,13 @@ export class CategoryService {
 
     async create({ data, createdById }: { data: CreateCategoryBodyType; createdById: number }) {
         try {
-            await this.categoryRepository.create({
+            const res = await this.categoryRepository.create({
                 createdById,
                 data,
             });
 
             return {
+                categoryId: res.id,
                 message: 'Create successfully',
                 status: '201',
             };
@@ -122,6 +124,7 @@ export class CategoryService {
             // soft delete
             await this.categoryRepository.delete(id, false);
             return {
+                success: true,
                 message: 'Delete successfully',
             };
         } catch (error) {

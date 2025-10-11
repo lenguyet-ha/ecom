@@ -110,13 +110,13 @@ export const GetCategoryParamsSchema = z
 export const CreateCategoryBodySchema = CategorySchema.pick({
     logo: true,
     name: true,
-    parentCategoryId: true,
+    ///parentCategoryId: true,
 }).strict();
 
 export const UpdateCategoryBodySchema = CategorySchema.pick({
     logo: true,
     name: true,
-    parentCategoryId: true,
+ //   parentCategoryId: true,
 })
     .partial()
     .strict();
