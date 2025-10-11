@@ -18,6 +18,7 @@ import { HashingService } from 'src/shared/services/hashing.service';
 import { RoleRepo } from 'src/shared/repositories/role.repository';
 import { UserRepository } from 'src/shared/repositories/user.repository';
 import { NotFoundRecordException } from 'src/shared/types/error';
+import { success } from 'zod';
 
 @Injectable()
 export class UserService {
@@ -183,6 +184,7 @@ export class UserService {
                 deletedById,
             });
             return {
+                success: true,
                 message: 'Delete successfully',
             };
         } catch (error) {

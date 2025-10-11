@@ -8,8 +8,8 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     const reflector = app.get(Reflector);
     app.enableCors({
-        origin: 'http://localhost:3000', // Thay bằng origin của frontend (e.g., http://localhost:3000)
-        credentials: false, // Nếu dùng cookies/auth
+        origin: ['http://localhost:3000', 'http://localhost:7030'], // Cho phép cả hai origin
+        credentials: false, // Nếu dùng cookies/auth, set thành true
     });
     app.useGlobalPipes(new ZodValidationPipe());
     // Tạm tắt để test

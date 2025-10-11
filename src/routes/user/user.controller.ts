@@ -31,7 +31,6 @@ export class UserController {
     }
 
     @Post()
-    @ZodSerializerDto(CreateUserResDTO)
     create(
         @Body() body: CreateUserBodyDTO,
         @ActiveUser('userId') userId: number,
@@ -45,7 +44,6 @@ export class UserController {
     }
 
     @Put(':userId')
-    @ZodSerializerDto(UpdateProfileResDTO)
     update(
         @Body() body: UpdateUserBodyDTO,
         @Param() params: GetUserParamsDTO,
