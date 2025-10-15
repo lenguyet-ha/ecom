@@ -97,7 +97,6 @@ export class AuthService {
     }
     async login(body: any) {
         const user = await this.userRepository.findByEmailWithRole(body.email);
-        console.log(user);
 
         if (!user) {
             throw new UnprocessableEntityException([

@@ -24,6 +24,7 @@ import { OrderModule } from './routes/order/order.module';
 import { BullModule } from '@nestjs/bullmq';
 import { PaymentModule } from './routes/payment/payment.module';
 import { ReviewModule } from './routes/review/review.module';
+import { MessageModule } from './routes/message/message.module';
 
 @Module({
     imports: [
@@ -53,6 +54,7 @@ import { ReviewModule } from './routes/review/review.module';
         OrderModule,
         PaymentModule,
         ReviewModule,
+        MessageModule,
     ],
     controllers: [AppController],
     providers: [

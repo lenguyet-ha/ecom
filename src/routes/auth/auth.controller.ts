@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, Get, Param } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterBodyDTO, RegisterResDTO, SendOtpDTO } from './auth.dto';
 import { Auth } from 'src/shared/decorators/auth.decorator';
