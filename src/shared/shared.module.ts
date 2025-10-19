@@ -42,7 +42,7 @@ const sharedServices = [
     ProductRepository,
     ProductTranslationRepo,
     CartRepo,
-  //  OrderRepo,
+    OrderRepo,
    // PaymentRepo,
 ];
 

@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ReviewService } from './review.service';
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator';
+import { IsPublic } from 'src/shared/decorators/public.decorator';
 import {
     CreateReviewBodyDTO,
     CreateReviewResDTO,
@@ -23,11 +24,13 @@ export class ReviewController {
     }
 
     @Get()
+    @IsPublic()
     getByProduct(@Query() query: GetReviewsByProductQueryDTO): Promise<GetReviewsResDTO> {
         return this.reviewService.getByProduct(query);
     }
 
     @Get('order/:orderId')
+    @IsPublic()
     getByOrder(@Param() param: GetReviewsByOrderQueryDTO): Promise<GetReviewsByOrderResDTO> {
         return this.reviewService.getByOrder(param.orderId);
     }

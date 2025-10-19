@@ -22,6 +22,36 @@ export const OrderSchema = z.object({
         address: z.string(),
     }),
     shopId: z.number().nullable(),
+    // Order calculations
+    subtotal: z.number().default(0),
+    discountAmount: z.number().nullable().default(0),
+    total: z.number().default(0),
+    commissionRate: z.number().default(8.0),
+    adminCommissionAmount: z.number().nullable().default(0),
+    shopPayoutAmount: z.number().nullable().default(0),
+    payoutStatus: z.enum(['PENDING', 'PAID', 'PARTIAL']).default('PENDING'),
+    // Payment & shipping methods
+    paymentMethodId: z.number().nullable(),
+    paymentMethod: z.object({
+        id: z.number(),
+        name: z.string(),
+        key: z.string(),
+    }).nullable(),
+    shippingMethodId: z.number().nullable(),
+    shippingMethod: z.object({
+        id: z.number(),
+        name: z.string(),
+        provider: z.string().nullable(),
+        price: z.number(),
+    }).nullable(),
+    discountCodeId: z.number().nullable(),
+    discountCode: z.object({
+        id: z.number(),
+        code: z.string(),
+        type: z.enum(['PERCENTAGE', 'FIXED']),
+        value: z.number(),
+        bearer: z.enum(['ADMIN', 'SHOP']),
+    }).nullable(),
 
     createdById: z.number().nullable(),
     updatedById: z.number().nullable(),
@@ -94,6 +124,10 @@ export const CreateOrderBodySchema = z
                 address: z.string(),
             }),
             cartItemIds: z.array(z.number()).min(1),
+            // Optional order options
+            discountCodeId: z.number().optional(),
+            shippingMethodId: z.number().optional(),
+            paymentMethodId: z.number().optional(),
         }),
     )
     .min(1);

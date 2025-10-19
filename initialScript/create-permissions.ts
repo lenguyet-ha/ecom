@@ -12,11 +12,11 @@ const SellerModule = [
     'CART',
     'ORDER',
     'PAYMENT',
-    'REVIEW',
+    'REVIEWS',
     'MESSAGES',
     'CATEGORY',
 ];
-const ClientModule = ['AUTH', 'MEDIA', 'PROFILE', 'CART', 'ORDER', 'PAYMENT', 'REVIEW', 'MESSAGES', 'CATEGORY'];
+const ClientModule = ['AUTH', 'MEDIA', 'PROFILE', 'CART', 'ORDER', 'PAYMENT', 'REVIEWS', 'MESSAGES', 'CATEGORY'];
 
 const prisma = new PrismaService();
 
