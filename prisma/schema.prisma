@@ -92,6 +92,19 @@ model User {
   sentMessages                Message[]             @relation("FromUser")
   receivedMessages            Message[]             @relation("ToUser")
   webSockets                  Websocket[]
+  // Bank / payout information for users who are sellers
+  bankAccountNumber           String?               @db.VarChar(100)
+  bankName                    String?               @db.VarChar(200)
+  bankAccountName             String?               @db.VarChar(200)
+  // Seller registration information
+  citizenId                   String?               @db.VarChar(20)  // CCCD/CMND number
+  address                     String?               @db.VarChar(500) // Full address
+  // Discounts created by this user (admin or shop)
+  createdDiscounts            DiscountCode[]        @relation("DiscountCreatedBy")
+  // Discounts that belong to shop users
+  shopDiscounts               DiscountCode[]        @relation("DiscountShop")
+  // Discount usages by this user
+  discountUsages              DiscountUsage[]
 
   // 1 user có thể tạo ra nhiều user khác
   // 1 user chỉ có thể được tạo ra bởi 1 user khác
@@ -428,25 +441,43 @@ model ProductSKUSnapshot {
 }
 
 model Order {
-  id          Int                  @id @default(autoincrement())
-  userId      Int
-  user        User                 @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  status      OrderStatus
-  items       ProductSKUSnapshot[]
-  products    Product[]
-  reviews     Review[]
+  id               Int                  @id @default(autoincrement())
+  userId           Int
+  user             User                 @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  status           OrderStatus
+  items            ProductSKUSnapshot[]
+  products         Product[]
+  reviews          Review[]
   /// [Receiver]
-  receiver    Json
-  shopId      Int?
-  shop        User?                @relation("Shop", fields: [shopId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  paymentId   Int
-  payment     Payment              @relation(fields: [paymentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  createdById Int?
-  createdBy   User?                @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  updatedById Int?
-  updatedBy   User?                @relation("OrderUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  deletedById Int?
-  deletedBy   User?                @relation("OrderDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  receiver         Json
+  shopId           Int?
+  shop             User?                @relation("Shop", fields: [shopId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  paymentId        Int
+  payment          Payment              @relation(fields: [paymentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  // New relations
+  paymentMethodId  Int?
+  paymentMethod    PaymentMethod?       @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  shippingMethodId Int?
+  shippingMethod   ShippingMethod?      @relation(fields: [shippingMethodId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  discountCodeId   Int?
+  discountCode     DiscountCode?        @relation(fields: [discountCodeId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  // Order totals and commission
+  subtotal             Float            @default(0) // Total product value before discount
+  discountAmount       Float?           @default(0) // Discount amount applied
+  total                Float            @default(0) // Final total: subtotal + shippingMethod.price - discountAmount
+  commissionRate       Float            @default(8.0) // Commission rate percentage (default 8%)
+
+  // Payout accounting fields
+  adminCommissionAmount Float?       @default(0) // 8% of (subtotal - discountAmount)
+  shopPayoutAmount      Float?       @default(0) // subtotal - discountAmount - adminCommissionAmount
+  payoutStatus          PayoutStatus @default(PENDING)
+  createdById           Int?
+  createdBy             User?        @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  updatedById           Int?
+  updatedBy             User?        @relation("OrderUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  deletedById           Int?
+  deletedBy             User?        @relation("OrderDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
@@ -508,9 +539,9 @@ model PaymentTransaction {
   transactionDate    DateTime @default(now())
   accountNumber      String?  @db.VarChar(100)
   subAccount         String?  @db.VarChar(250)
-  amountIn           Int      @default(0)
-  amountOut          Int      @default(0)
-  accumulated        Int      @default(0)
+  amountIn           Float    @default(0)
+  amountOut          Float    @default(0)
+  accumulated        Float    @default(0)
   code               String?  @db.VarChar(250)
   transactionContent String?  @db.Text
   referenceNumber    String?  @db.VarChar(255)
@@ -529,6 +560,83 @@ model Message {
 
   readAt    DateTime?
   createdAt DateTime  @default(now())
+}
+
+// Payment method / shipping / discount models
+model PaymentMethod {
+  id          Int     @id @default(autoincrement())
+  key         String  @unique @db.VarChar(100) // e.g. CASH, ONLINE, BANK_TRANSFER
+  name        String  @db.VarChar(200)
+  description String?
+  isActive    Boolean @default(true)
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ShippingMethod {
+  id       Int     @id @default(autoincrement())
+  name     String  @db.VarChar(200)
+  provider String? @db.VarChar(200)
+  price    Float   @default(0) // shipping cost in currency units
+  isActive Boolean @default(true)
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum DiscountBearer {
+  ADMIN
+  SHOP
+}
+
+model DiscountCode {
+  id          Int            @id @default(autoincrement())
+  code        String         @unique @db.VarChar(100)
+  type        DiscountType
+  value       Float // percentage (0-100) or fixed amount (currency)
+  bearer      DiscountBearer // who bears the discount cost
+  shopId      Int?
+  shop        User?          @relation("DiscountShop", fields: [shopId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  usageLimit  Int?
+  usedCount   Int            @default(0)
+  validFrom   DateTime?
+  validTo     DateTime?
+  isActive    Boolean        @default(true)
+  createdById Int?
+  createdBy   User?          @relation("DiscountCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  orders Order[]
+  usages DiscountUsage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DiscountUsage {
+  id             Int          @id @default(autoincrement())
+  discountCodeId Int
+  discountCode   DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId         Int
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usedAt         DateTime     @default(now())
+
+  @@unique([discountCodeId, userId])
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
+  PARTIAL
 }
 
 enum PaymentStatus {
