@@ -31,7 +31,7 @@
         "@nestjs/jwt": "^11.0.0",
         "@nestjs/platform-express": "^11.0.1",
         "@nestjs/platform-socket.io": "^11.1.6",
-        "@nestjs/websockets": "^11.1.6",
+        "@nestjs/websockets": "^11.1.7",
         "@prisma/client": "^6.15.0",
         "bcrypt": "^6.0.0",
         "bullmq": "^5.58.9",

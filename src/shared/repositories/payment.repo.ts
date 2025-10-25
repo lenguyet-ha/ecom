@@ -15,10 +15,10 @@ export class PaymentRepo {
         private readonly paymentProducer: PaymentProducer,
     ) {}
 
-    private getTotalPrice(orders: OrderIncludeProductSKUSnapshotType[]): number {
+    private getTotalPrice(orders: { items: { skuPrice: number; quantity: number }[] }[]): number {
         return orders.reduce((total, order) => {
             const orderTotal = order.items.reduce((totalPrice, productSku) => {
-                return totalPrice + productSku.skuPrice * productSku.quantity;
+                return totalPrice + (productSku.skuPrice || 0) * (productSku.quantity || 0);
             }, 0);
             return total + orderTotal;
         }, 0);

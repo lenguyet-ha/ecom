@@ -27,9 +27,9 @@ import { OrderProducer } from 'src/routes/order/order.producer';
 export class OrderRepo {
     constructor(
         private readonly prismaService: PrismaService,
-        private orderProducer: OrderProducer,
+      //  private orderProducer: OrderProducer,
     ) {}
-    async list(userId: number, query: GetOrderListQueryType): Promise<GetOrderListResType> {
+    async list(userId: number, query: GetOrderListQueryType): Promise<any> {
         const { page, limit, status } = query;
         const skip = (page - 1) * limit;
         const take = limit;
@@ -94,12 +94,7 @@ export class OrderRepo {
             totalPages: Math.ceil(totalItems / limit),
         };
     }
-    async create(
-        userId: number,
-        body: CreateOrderBodyType,
-    ): Promise<{
-        orders: CreateOrderResType['data'];
-    }> {
+    async create(userId: number, body: CreateOrderBodyType): Promise<any> {
         // 1. Kiểm tra xem tất cả cartItemIds có tồn tại trong cơ sở dữ liệu hay không
         // 2. Kiểm tra số lượng mua có lớn hơn số lượng tồn kho hay không
         // 3. Kiểm tra xem tất cả sản phẩm mua có sản phẩm nào bị xóa hay ẩn không
@@ -242,8 +237,8 @@ export class OrderRepo {
                     }),
                 ),
             );
-            const addCancelPaymentJob$ = this.orderProducer.addCancelPaymentJob(payment.id);
-            const [orders] = await Promise.all([orders$, cartItem$, sku$, addCancelPaymentJob$]);
+       //     const addCancelPaymentJob$ = this.orderProducer.addCancelPaymentJob(payment.id);
+            const [orders] = await Promise.all([orders$, cartItem$, sku$]);
             return [payment.id, orders];
         });
         return {
@@ -251,7 +246,7 @@ export class OrderRepo {
         };
     }
 
-    async detail(userId: number, orderid: number): Promise<GetOrderDetailResType> {
+    async detail(userId: number, orderid: number): Promise<any> {
         const order = await this.prismaService.order.findUnique({
             where: {
                 id: orderid,
@@ -287,7 +282,7 @@ export class OrderRepo {
         };
     }
 
-    async cancel(userId: number, orderId: number): Promise<CancelOrderResType> {
+    async cancel(userId: number, orderId: number): Promise<any> {
         try {
             const order = await this.prismaService.order.findUniqueOrThrow({
                 where: {
