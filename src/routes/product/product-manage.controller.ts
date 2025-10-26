@@ -5,6 +5,7 @@ import {
     GetManageProductsQueryDTO,
     GetProductParamsDTO,
     UpdateProductBodyDTO,
+    UpdateProductStatusBodyDTO,
 } from 'src/routes/product/product.dto';
 import { ActiveUser } from 'src/shared/decorators/active-user.decorator';
 
@@ -33,8 +34,12 @@ export class ManageProductController {
     }
 
     @Post()
-    create(@Body() body: CreateProductBodyDTO, @ActiveUser('userId') userId: number) {
-        return this.manageProductService.create({ data: body, createdById: userId });
+    create(@Body() body: CreateProductBodyDTO, @ActiveUser() user: jwtType.AccessTokenPayload) {
+        return this.manageProductService.create({
+            data: body,
+            createdById: user.userId,
+            roleName: user.roleName
+        });
     }
 
     @Put(':productId')
@@ -56,6 +61,20 @@ export class ManageProductController {
         return this.manageProductService.delete({
             productId: params.productId,
             deletedById: user.userId,
+            roleNameRequest: user.roleName,
+        });
+    }
+
+    @Put(':productId/status')
+    updateStatus(
+        @Body() body: UpdateProductStatusBodyDTO,
+        @Param() params: GetProductParamsDTO,
+        @ActiveUser() user: jwtType.AccessTokenPayload,
+    ) {
+        return this.manageProductService.updateStatus({
+            productId: params.productId,
+            status: body.status,
+            updatedById: user.userId,
             roleNameRequest: user.roleName,
         });
     }

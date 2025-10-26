@@ -238,6 +238,7 @@ model Product {
   name                String               @db.VarChar(500)
   basePrice           Float
   virtualPrice        Float
+  status              ProductStatus        @default(INACTIVE)
   brandId             Int
   brand               Brand                @relation(fields: [brandId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   images              String[]
@@ -680,4 +681,10 @@ enum HTTPMethod {
 enum MediaType {
   IMAGE
   VIDEO
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  WAITING_ACTIVE
 }

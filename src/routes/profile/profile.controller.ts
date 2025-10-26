@@ -9,7 +9,7 @@ export class ProfileController {
     constructor(private readonly profileService: ProfileService) {}
 
     @Get()
-    @IsPublic()
+  //  @IsPublic()
     getProfile(@ActiveUser('userId') userId: number) {
         return this.profileService.getProfile(userId);
     }

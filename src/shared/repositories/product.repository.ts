@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/shared/services/prisma.service';
 import {
     CreateProductBodyType,
+    GetManageProductsQueryType,
     GetProductDetailResType,
     GetProductsQueryType,
     GetProductsResType,
@@ -13,7 +14,7 @@ import { Prisma } from '@prisma/client';
 export class ProductRepository {
     constructor(private prismaService: PrismaService) {}
 
-    async getList(query: GetProductsQueryType): Promise<GetProductsResType> {
+    async getList(query: GetManageProductsQueryType): Promise<GetProductsResType> {
         const page = query.page ?? 1;
         const limit = query.limit ?? 10;
         const skip = (page - 1) * limit;
@@ -43,6 +44,10 @@ export class ProductRepository {
 
         if (query.createdById) {
             where.createdById = query.createdById;
+        }
+
+        if (query.status) {
+            where.status = query.status;
         }
 
         if (query.isPublished === true) {
@@ -91,7 +96,7 @@ export class ProductRepository {
                     categories: {
                         where: { deletedAt: null },
                     },
-                    brand: true,
+                brand: true,
                     skus: {
                         where: { deletedAt: null },
                     },
@@ -120,7 +125,15 @@ export class ProductRepository {
                 descriprion: product.productTranslations?.[0]?.description ?? null,
                 basePrice: product.basePrice,
                 virtualPrice: product.virtualPrice,
+                status: product.status,
                 brandId: product.brandId,
+                brand: product.brand
+                    ? {
+                          id: product.brand.id,
+                          name: product.brand.name,
+                          logo: product.brand.logo,
+                      }
+                    : null,
                 images: product.images,
                 variants: product.variants,
                 createdById: product.createdById,
@@ -211,6 +224,7 @@ export class ProductRepository {
             name: result.name,
             basePrice: result.basePrice,
             virtualPrice: result.virtualPrice,
+            status: result.status,
             brandId: result.brandId,
             images: result.images,
             variants: result.variants,
@@ -402,5 +416,23 @@ export class ProductRepository {
             }),
         ]);
         return product;
+    }
+
+    async updateStatus({
+        id,
+        status,
+        updatedById,
+    }: {
+        id: number;
+        status: string;
+        updatedById: number;
+    }): Promise<any> {
+        return this.prismaService.product.update({
+            where: { id, deletedAt: null },
+            data: {
+                status: status as any,
+                updatedById,
+            },
+        });
     }
 }

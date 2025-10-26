@@ -25,6 +25,9 @@ import { BullModule } from '@nestjs/bullmq';
 import { PaymentModule } from './routes/payment/payment.module';
 import { ReviewModule } from './routes/review/review.module';
 import { MessageModule } from './routes/message/message.module';
+import { PaymentMethodModule } from './routes/payment-method/payment-method.module';
+import { ShippingMethodModule } from './routes/shipping-method/shipping-method.module';
+import { DiscountCodeModule } from './routes/discount-code/discount-code.module';
 
 @Module({
     imports: [
@@ -55,6 +58,9 @@ import { MessageModule } from './routes/message/message.module';
         PaymentModule,
         ReviewModule,
         MessageModule,
+        PaymentMethodModule,
+        ShippingMethodModule,
+        DiscountCodeModule,
     ],
     controllers: [AppController],
     providers: [

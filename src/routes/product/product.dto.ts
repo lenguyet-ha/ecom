@@ -51,6 +51,7 @@ export const ProductSchema = z.object({
     name: z.string().trim().max(500),
     basePrice: z.number().min(0),
     virtualPrice: z.number().min(0),
+    status: z.enum(['ACTIVE', 'INACTIVE', 'WAITING_ACTIVE']),
     brandId: z.number().positive(),
     images: z.array(z.string()),
     variants: VariantsSchema, // Json field represented as a record
@@ -124,10 +125,12 @@ export const GetProductsQuerySchema = z.object({
  */
 export const GetManageProductsQuerySchema = GetProductsQuerySchema.extend({
     isPublic: z.preprocess((value) => value === 'true', z.boolean()).optional(),
-    createdById: z.coerce.number().int().positive(),
+    status: z.enum(['ACTIVE', 'INACTIVE', 'WAITING_ACTIVE']).optional(),
+    createdById: z.coerce.number().int().positive().optional(),
 });
 export const ProductWithShopSchema = ProductSchema.extend({
     shopInfo: ShopInfoSchema.nullable(),
+    brand: BrandSchema.nullable(),
 });
 
 export const GetProductsResSchema = z.object({
@@ -157,6 +160,7 @@ export const CreateProductBodySchema = z
         name: z.string().trim().max(500),
         basePrice: z.number().min(0),
         virtualPrice: z.number().min(0),
+        status: z.enum(['ACTIVE', 'INACTIVE', 'WAITING_ACTIVE']).optional(),
         brandId: z.number().positive(),
         images: z.array(z.string()),
         variants: VariantsSchema,
@@ -205,8 +209,13 @@ export type GetProductDetailResType = z.infer<typeof GetProductDetailResSchema>;
 export type CreateProductBodyType = z.infer<typeof CreateProductBodySchema>;
 export type GetProductParamsType = z.infer<typeof GetProductParamsSchema>;
 export type UpdateProductBodyType = z.infer<typeof UpdateProductBodySchema>;
+export const UpdateProductStatusBodySchema = z
+    .object({
+        status: z.enum(['ACTIVE', 'INACTIVE', 'WAITING_ACTIVE']),
+    })
+    .strict();
 
-export class ProductDTO extends createZodDto(ProductSchema) {}
+export type UpdateProductStatusBodyType = z.infer<typeof UpdateProductStatusBodySchema>;
 
 export class GetProductsResDTO extends createZodDto(GetProductsResSchema) {}
 
@@ -219,5 +228,5 @@ export class GetProductParamsDTO extends createZodDto(GetProductParamsSchema) {}
 export class GetProductDetailResDTO extends createZodDto(GetProductDetailResSchema) {}
 
 export class CreateProductBodyDTO extends createZodDto(CreateProductBodySchema) {}
-
 export class UpdateProductBodyDTO extends createZodDto(UpdateProductBodySchema) {}
+export class UpdateProductStatusBodyDTO extends createZodDto(UpdateProductStatusBodySchema) {}
