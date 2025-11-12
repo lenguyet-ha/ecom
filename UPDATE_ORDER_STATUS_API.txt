@@ -1,0 +1,235 @@
+================================================================================
+API CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
+================================================================================
+
+API: PATCH /api/orders/:orderId/status
+
+MÔ TẢ:
+API này cho phép cập nhật trạng thái của đơn hàng.
+- Admin có thể xác nhận thanh toán COD
+- Shop có thể cập nhật tiến độ giao hàng
+- Hệ thống có thể cập nhật trạng thái sau webhook thanh toán
+
+================================================================================
+REQUEST
+================================================================================
+
+Endpoint: PATCH /api/orders/:orderId/status
+
+Ví dụ: PATCH /api/orders/123/status
+
+Headers (BẮT BUỘC):
+  - Authorization: Bearer {token}
+  - Content-Type: application/json
+
+Path Parameters:
+  - orderId: ID của đơn hàng cần cập nhật (number)
+
+Request Body:
+{
+  "status": "PENDING_PICKUP"
+}
+
+CÁC GIÁ TRỊ STATUS HỢP LỆ:
+  - "PENDING_PAYMENT"   : Chờ thanh toán
+  - "PENDING_PICKUP"    : Chờ lấy hàng (sau khi thanh toán thành công)
+  - "PENDING_DELIVERY"  : Đang giao hàng
+  - "DELIVERED"         : Đã giao hàng thành công
+  - "RETURNED"          : Đã hoàn trả
+  - "CANCELLED"         : Đã hủy
+
+================================================================================
+RESPONSE (THÀNH CÔNG)
+================================================================================
+
+Status Code: 200
+
+{
+  "id": 123,
+  "userId": 2,
+  "status": "PENDING_PICKUP",        // Trạng thái mới
+  "receiver": {
+    "name": "Nguyễn Văn A",
+    "phone": "0123456789",
+    "address": "123 Đường ABC, Quận 1, TP.HCM"
+  },
+  "shopId": 1,
+  "subtotal": 130000,
+  "discountAmount": 26000,
+  "total": 129000,
+  "commissionRate": 8.0,
+  "adminCommissionAmount": 8320,
+  "shopPayoutAmount": 95680,
+  "payoutStatus": "PENDING",
+  "paymentMethodId": 1,
+  "shippingMethodId": 2,
+  "discountCodeId": 1,
+  "createdById": 2,
+  "updatedById": 2,                   // ID user vừa update
+  "deletedById": null,
+  "deletedAt": null,
+  "createdAt": "2025-11-08T10:30:00.000Z",
+  "updatedAt": "2025-11-08T11:00:00.000Z"  // Thời gian update
+}
+
+================================================================================
+VÍ DỤ SỬ DỤNG (CURL)
+================================================================================
+
+# 1. Xác nhận thanh toán COD thành công → Chuyển sang chờ lấy hàng
+curl -X PATCH 'http://localhost:3000/api/orders/123/status' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{"status": "PENDING_PICKUP"}'
+
+# 2. Cập nhật: Shop đã lấy hàng, đang giao
+curl -X PATCH 'http://localhost:3000/api/orders/123/status' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{"status": "PENDING_DELIVERY"}'
+
+# 3. Cập nhật: Đã giao hàng thành công
+curl -X PATCH 'http://localhost:3000/api/orders/123/status' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{"status": "DELIVERED"}'
+
+# 4. Cập nhật: Khách hàng hoàn trả
+curl -X PATCH 'http://localhost:3000/api/orders/123/status' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{"status": "RETURNED"}'
+
+================================================================================
+VÍ DỤ CODE JAVASCRIPT/TYPESCRIPT
+================================================================================
+
+async function updateOrderStatus(orderId: number, status: string, token: string) {
+  const response = await fetch(`/api/orders/${orderId}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ status })
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to update order status');
+  }
+  
+  return await response.json();
+}
+
+// Sử dụng
+try {
+  // Admin xác nhận thanh toán COD
+  const order = await updateOrderStatus(123, 'PENDING_PICKUP', token);
+  console.log('Đơn hàng đã được cập nhật:', order);
+} catch (error) {
+  console.error('Lỗi khi cập nhật:', error);
+}
+
+================================================================================
+XỬ LÝ LỖI
+================================================================================
+
+1. Status Code: 404
+   Message: Đơn hàng không tồn tại
+   {
+     "message": "Error.Order.NotFound",
+     "statusCode": 404
+   }
+
+2. Status Code: 400
+   Message: Status không hợp lệ
+   {
+     "message": "Validation failed",
+     "errors": [...]
+   }
+
+3. Status Code: 401
+   Message: Chưa đăng nhập hoặc token không hợp lệ
+   {
+     "message": "Unauthorized",
+     "statusCode": 401
+   }
+
+================================================================================
+FLOW CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
+================================================================================
+
+TRƯỜNG HỢP 1: THANH TOÁN ONLINE (VNPay, SePay, v.v.)
+-----------------------------------------------------
+1. User tạo đơn hàng → status = PENDING_PAYMENT
+2. User thanh toán online
+3. Webhook tự động update → status = PENDING_PICKUP
+4. Shop lấy hàng → PATCH /api/orders/:id/status {"status": "PENDING_DELIVERY"}
+5. Đang giao hàng → status = PENDING_DELIVERY
+6. Giao thành công → PATCH /api/orders/:id/status {"status": "DELIVERED"}
+
+TRƯỜNG HỢP 2: THANH TOÁN COD (Cash On Delivery)
+------------------------------------------------
+1. User tạo đơn hàng → status = PENDING_PAYMENT
+2. User chọn thanh toán COD
+3. Admin/Shop xác nhận đơn → PATCH /api/orders/:id/status {"status": "PENDING_PICKUP"}
+4. Shop lấy hàng → PATCH /api/orders/:id/status {"status": "PENDING_DELIVERY"}
+5. Giao hàng và thu tiền → PATCH /api/orders/:id/status {"status": "DELIVERED"}
+
+TRƯỜNG HỢP 3: HOÀN TRẢ
+-----------------------
+1. Khách hàng yêu cầu hoàn trả
+2. Admin/Shop xử lý → PATCH /api/orders/:id/status {"status": "RETURNED"}
+
+TRƯỜNG HỢP 4: HỦY ĐƠN
+----------------------
+1. User/Admin hủy đơn → PUT /api/orders/:id (API cancel hiện có)
+   hoặc PATCH /api/orders/:id/status {"status": "CANCELLED"}
+
+================================================================================
+PHÂN QUYỀN (Gợi ý)
+================================================================================
+
+Tùy vào role, có thể giới hạn quyền cập nhật status:
+
+CLIENT (User):
+  - KHÔNG được phép gọi API này trực tiếp
+  - Chỉ có thể hủy đơn qua API PUT /api/orders/:id (khi status = PENDING_PAYMENT)
+
+SHOP (Seller):
+  - Có thể update: PENDING_PICKUP → PENDING_DELIVERY → DELIVERED
+  - Có thể update: → RETURNED (nếu khách hoàn hàng)
+
+ADMIN:
+  - Có thể update BẤT KỲ trạng thái nào
+  - Xác nhận thanh toán COD: PENDING_PAYMENT → PENDING_PICKUP
+
+LƯU Ý: Hiện tại API chưa có validation phân quyền, cần implement thêm nếu cần.
+
+================================================================================
+SO SÁNH VỚI API CANCEL
+================================================================================
+
+PUT /api/orders/:orderId (Cancel API - đã có):
+  - Chỉ dùng để HỦY đơn hàng
+  - Chỉ cho phép hủy khi status = PENDING_PAYMENT
+  - Tự động set status = CANCELLED
+
+PATCH /api/orders/:orderId/status (API mới):
+  - Dùng để cập nhật BẤT KỲ trạng thái nào
+  - Linh hoạt hơn, phù hợp cho nhiều use case
+  - Cần validation phân quyền và business logic
+
+================================================================================
+CHECKLIST TRIỂN KHAI (Frontend)
+================================================================================
+
+□ Tạo function updateOrderStatus(orderId, status, token)
+□ Xử lý lỗi khi API trả về 404 (đơn hàng không tồn tại)
+□ Xử lý lỗi khi API trả về 400 (status không hợp lệ)
+□ Hiển thị notification khi cập nhật thành công
+□ Reload lại danh sách đơn hàng sau khi cập nhật
+□ Disable button khi đang gọi API (tránh duplicate request)
+□ Validate status trước khi gọi API (dropdown chỉ hiển thị status hợp lệ)
+
+================================================================================

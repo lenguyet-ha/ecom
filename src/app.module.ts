@@ -28,6 +28,7 @@ import { MessageModule } from './routes/message/message.module';
 import { PaymentMethodModule } from './routes/payment-method/payment-method.module';
 import { ShippingMethodModule } from './routes/shipping-method/shipping-method.module';
 import { DiscountCodeModule } from './routes/discount-code/discount-code.module';
+import { SellerRegistrationModule } from './routes/seller-registration/seller-registration.module';
 
 @Module({
     imports: [
@@ -61,6 +62,7 @@ import { DiscountCodeModule } from './routes/discount-code/discount-code.module'
         PaymentMethodModule,
         ShippingMethodModule,
         DiscountCodeModule,
+        SellerRegistrationModule,
     ],
     controllers: [AppController],
     providers: [

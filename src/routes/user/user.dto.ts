@@ -38,7 +38,10 @@ export const CreateUserBodySchema = UserSchema.pick({
     status: true,
     password: true,
     roleId: true,
-})
+}).extend({
+    avatar: UserSchema.shape.avatar.optional(),
+    status: UserSchema.shape.status.optional(),
+}).strict();
 
 export const UpdateUserBodySchema = CreateUserBodySchema;
 

@@ -15,8 +15,9 @@ const SellerModule = [
     'REVIEWS',
     'MESSAGES',
     'CATEGORY',
+    'SELLER-REGISTRATION'
 ];
-const ClientModule = ['AUTH', 'MEDIA', 'PROFILE', 'CART', 'ORDER', 'PAYMENT', 'REVIEWS', 'MESSAGES', 'CATEGORY'];
+const ClientModule = ['AUTH', 'MEDIA', 'PROFILE', 'CART', 'ORDERS', 'PAYMENT', 'REVIEWS', 'MESSAGES', 'CATEGORY', 'SELLER-REGISTRATION', 'SHIPPING-METHODS', 'DISCOUNT-CODES', 'PAYMENT-METHODS'];
 
 const prisma = new PrismaService();
 

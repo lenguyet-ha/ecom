@@ -20,6 +20,8 @@ export interface RefreshTokenPayload extends RefreshTokenPayloadCreate {
 
 export interface TokenPayload {
     userId: number;
+    roleId: number;
+    roleName: string;
     exp: number;
     iat: number;
 }

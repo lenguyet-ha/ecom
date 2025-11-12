@@ -128,6 +128,10 @@ export const CreateOrderBodySchema = z
             discountCodeId: z.number().optional(),
             shippingMethodId: z.number().optional(),
             paymentMethodId: z.number().optional(),
+            // Financial calculations
+            subtotal: z.number().min(0),
+            discountAmount: z.number().min(0).default(0),
+            total: z.number().min(0),
         }),
     )
     .min(1);
@@ -144,6 +148,10 @@ export const GetOrderParamsSchema = z
 
 export const CancelOrderBodySchema = z.object({});
 
+export const UpdateOrderStatusBodySchema = z.object({
+    status: OrderStatusSchema,
+});
+
 export const OrderIncludeProductSKUSnapshotSchema = OrderSchema.extend({
     items: z.array(ProductSKUSnapshotSchema),
 });
@@ -157,6 +165,7 @@ export type CreateOrderBodyType = z.infer<typeof CreateOrderBodySchema>;
 export type CreateOrderResType = z.infer<typeof CreateOrderResSchema>;
 export type CancelOrderResType = z.infer<typeof CancelOrderResSchema>;
 export type OrderType = z.infer<typeof OrderSchema>;
+export type UpdateOrderStatusBodyType = z.infer<typeof UpdateOrderStatusBodySchema>;
 
 export class GetOrderListResDTO extends createZodDto(GetOrderListResSchema) {}
 
@@ -173,3 +182,5 @@ export class CancelOrderResDTO extends createZodDto(CancelOrderResSchema) {}
 export class GetOrderParamsDTO extends createZodDto(GetOrderParamsSchema) {}
 
 export class CancelOrderBodyDTO extends createZodDto(CancelOrderBodySchema) {}
+
+export class UpdateOrderStatusBodyDTO extends createZodDto(UpdateOrderStatusBodySchema) {}

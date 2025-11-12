@@ -1,0 +1,516 @@
+================================================================================
+API QUẢN LÝ ĐƠN ĐĂNG KÝ BÁN HÀNG VÀ ĐƠN HÀNG CHO ADMIN
+================================================================================
+
+================================================================================
+PHẦN 1: API QUẢN LÝ ĐƠN ĐĂNG KÝ BÁN HÀNG (SELLER REGISTRATION)
+================================================================================
+
+--------------------------------------------------------------------------------
+1. LẤY DANH SÁCH ĐƠN CHỜ DUYỆT (PHÂN TRANG)
+--------------------------------------------------------------------------------
+Endpoint: GET /seller-registration/admin/pending?page=1&limit=20
+Method: GET
+Headers: 
+  Authorization: Bearer <admin_token>
+
+Query Parameters:
+  - page (optional): Số trang, mặc định = 1
+  - limit (optional): Số bản ghi/trang, mặc định = 20
+
+Response Example:
+{
+  "data": [
+    {
+      "id": 1,
+      "userId": 123,
+      "status": "PENDING_REVIEW",
+      "citizenId": "001234567890",
+      "citizenIdFrontImage": "https://...",
+      "citizenIdBackImage": "https://...",
+      "address": "123 Nguyễn Văn A, Quận 1, TP.HCM",
+      "bankAccountNumber": "1234567890",
+      "bankName": "Vietcombank",
+      "bankAccountName": "Nguyen Van A",
+      "registrationFee": 500000,
+      "paymentId": 45,
+      "createdAt": "2025-11-01T10:00:00Z",
+      "updatedAt": "2025-11-01T10:30:00Z"
+    }
+  ],
+  "pagination": {
+    "total": 50,
+    "page": 1,
+    "limit": 20,
+    "pages": 3
+  }
+}
+
+Mô tả:
+- API này trả về danh sách tất cả đơn đăng ký có trạng thái PENDING_REVIEW
+- Hỗ trợ phân trang để dễ quản lý
+- Hiển thị đầy đủ thông tin: CCCD, địa chỉ, tài khoản ngân hàng, phí đăng ký
+
+--------------------------------------------------------------------------------
+2. LẤY DANH SÁCH ĐƠN THEO TRẠNG THÁI
+--------------------------------------------------------------------------------
+Endpoint: GET /seller-registration/admin/by-status?status=PENDING_REVIEW
+Method: GET
+Headers: 
+  Authorization: Bearer <admin_token>
+
+Query Parameters:
+  - status (required): Trạng thái đơn đăng ký
+    + PENDING_PAYMENT: Chờ thanh toán
+    + PENDING_REVIEW: Chờ duyệt
+    + APPROVED: Đã duyệt
+    + REJECTED: Bị từ chối
+    + CANCELLED: Đã hủy
+
+Response Example:
+{
+  "status": "PENDING_REVIEW",
+  "total": 15,
+  "data": [
+    {
+      "id": 1,
+      "userId": 123,
+      "status": "PENDING_REVIEW",
+      "citizenId": "001234567890",
+      "address": "123 Nguyễn Văn A, Quận 1, TP.HCM",
+      "bankAccountNumber": "1234567890",
+      "registrationFee": 500000,
+      "createdAt": "2025-11-01T10:00:00Z",
+      "updatedAt": "2025-11-01T10:30:00Z"
+    }
+  ]
+}
+
+Mô tả:
+- Lọc đơn đăng ký theo trạng thái cụ thể
+- Trả về toàn bộ danh sách không phân trang
+- Hiển thị tổng số đơn theo trạng thái
+
+--------------------------------------------------------------------------------
+3. DUYỆT ĐƠN ĐĂNG KÝ
+--------------------------------------------------------------------------------
+Endpoint: PUT /seller-registration/admin/:id/approve
+Method: PUT
+Headers: 
+  Authorization: Bearer <admin_token>
+
+Path Parameters:
+  - id: ID của đơn đăng ký (number)
+
+Request Body: Không cần
+
+Response Example:
+{
+  "registrationId": 1,
+  "status": "APPROVED",
+  "userId": 123,
+  "message": "Đơn đăng ký đã được duyệt. User hiện là SELLER"
+}
+
+Hành động tự động khi duyệt:
+1. Cập nhật status đơn đăng ký thành APPROVED
+2. Chuyển role của user thành SELLER (trong bảng User)
+3. Lưu thông tin admin duyệt (approvedById)
+4. Cập nhật thời gian duyệt (approvedAt)
+
+Điều kiện:
+- Đơn đăng ký phải ở trạng thái PENDING_REVIEW
+- Nếu đơn đang ở trạng thái khác sẽ báo lỗi
+
+Lỗi có thể xảy ra:
+- 404: Không tìm thấy đơn đăng ký
+- 400: Đơn không ở trạng thái PENDING_REVIEW
+
+--------------------------------------------------------------------------------
+4. TỪ CHỐI ĐƠN ĐĂNG KÝ
+--------------------------------------------------------------------------------
+Endpoint: PUT /seller-registration/admin/:id/reject
+Method: PUT
+Headers: 
+  Authorization: Bearer <admin_token>
+
+Path Parameters:
+  - id: ID của đơn đăng ký (number)
+
+Request Body:
+{
+  "rejectionReason": "Thông tin CCCD không rõ ràng, vui lòng chụp lại ảnh"
+}
+
+Validation:
+  - rejectionReason: Bắt buộc, từ 5-500 ký tự
+
+Response Example:
+{
+  "registrationId": 1,
+  "status": "REJECTED",
+  "rejectionReason": "Thông tin CCCD không rõ ràng, vui lòng chụp lại ảnh",
+  "message": "Đơn đăng ký đã bị từ chối"
+}
+
+Hành động tự động:
+1. Cập nhật status thành REJECTED
+2. Lưu lý do từ chối (rejectionReason)
+3. Lưu thông tin admin từ chối (approvedById)
+
+Điều kiện:
+- Đơn đăng ký phải ở trạng thái PENDING_REVIEW
+- Phải cung cấp lý do từ chối rõ ràng
+
+Lỗi có thể xảy ra:
+- 404: Không tìm thấy đơn đăng ký
+- 400: Đơn không ở trạng thái PENDING_REVIEW hoặc thiếu lý do từ chối
+
+
+================================================================================
+PHẦN 2: API QUẢN LÝ ĐƠN HÀNG (ORDERS)
+================================================================================
+
+--------------------------------------------------------------------------------
+5. LẤY DANH SÁCH ĐƠN HÀNG (PHÂN TRANG VÀ LỌC)
+--------------------------------------------------------------------------------
+Endpoint: GET /orders?page=1&limit=10&status=PENDING_PAYMENT
+Method: GET
+Headers: 
+  Authorization: Bearer <admin_token>
+
+Query Parameters:
+  - page (optional): Số trang, mặc định = 1
+  - limit (optional): Số bản ghi/trang, mặc định = 10
+  - status (optional): Lọc theo trạng thái đơn hàng
+    + PENDING_PAYMENT: Chờ thanh toán
+    + PENDING_PICKUP: Chờ lấy hàng
+    + PENDING_DELIVERY: Đang giao hàng
+    + DELIVERED: Đã giao
+    + RETURNED: Đã trả hàng
+    + CANCELLED: Đã hủy
+
+Response Example:
+{
+  "data": [
+    {
+      "id": 100,
+      "userId": 456,
+      "status": "PENDING_PAYMENT",
+      "shopId": 10,
+      "shopName": "Shop ABC",
+      "subtotal": 500000,
+      "discountAmount": 50000,
+      "total": 450000,
+      "commissionRate": 8.0,
+      "adminCommissionAmount": 36000,
+      "shopPayoutAmount": 414000,
+      "payoutStatus": "PENDING",
+      "paymentMethodId": 1,
+      "paymentMethod": {
+        "id": 1,
+        "name": "Momo",
+        "key": "MOMO"
+      },
+      "shippingMethodId": 2,
+      "shippingMethod": {
+        "id": 2,
+        "name": "Giao hàng nhanh",
+        "provider": "GHN",
+        "price": 25000
+      },
+      "discountCodeId": 5,
+      "discountCode": {
+        "id": 5,
+        "code": "SALE10",
+        "type": "PERCENTAGE",
+        "value": 10,
+        "bearer": "ADMIN"
+      },
+      "items": [
+        {
+          "id": 1,
+          "productId": 50,
+          "productName": "Áo thun nam",
+          "skuPrice": 150000,
+          "image": "https://example.com/image.jpg",
+          "skuValue": "Size M, Màu đen",
+          "quantity": 2,
+          "createdAt": "2025-11-09T10:00:00Z"
+        }
+      ],
+      "createdAt": "2025-11-09T10:00:00Z"
+    }
+  ],
+  "totalItems": 150,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 15
+}
+
+Mô tả:
+- Lấy danh sách tất cả đơn hàng trong hệ thống
+- Hỗ trợ phân trang và lọc theo trạng thái
+- Hiển thị đầy đủ thông tin: sản phẩm, phí, hoa hồng, phương thức thanh toán/vận chuyển
+- Tính toán hoa hồng admin và số tiền shop nhận được
+
+Thông tin quan trọng trong response:
+  - subtotal: Tổng tiền sản phẩm
+  - discountAmount: Số tiền giảm giá
+  - total: Tổng tiền cuối cùng khách hàng phải trả
+  - commissionRate: Tỷ lệ hoa hồng admin (%)
+  - adminCommissionAmount: Số tiền hoa hồng admin nhận
+  - shopPayoutAmount: Số tiền shop sẽ nhận
+  - payoutStatus: Trạng thái chi trả cho shop (PENDING/PAID/PARTIAL)
+
+--------------------------------------------------------------------------------
+6. XEM CHI TIẾT ĐƠN HÀNG
+--------------------------------------------------------------------------------
+Endpoint: GET /orders/:orderId
+Method: GET
+Headers: 
+  Authorization: Bearer <admin_token>
+
+Path Parameters:
+  - orderId: ID của đơn hàng (number)
+
+Response Example:
+{
+  "id": 100,
+  "userId": 456,
+  "status": "PENDING_PAYMENT",
+  "receiver": {
+    "name": "Nguyễn Văn B",
+    "phone": "0912345678",
+    "address": "456 Trần Hưng Đạo, Quận 5, TP.HCM"
+  },
+  "shopId": 10,
+  "shopName": "Shop ABC",
+  "subtotal": 500000,
+  "discountAmount": 50000,
+  "total": 450000,
+  "commissionRate": 8.0,
+  "adminCommissionAmount": 36000,
+  "shopPayoutAmount": 414000,
+  "payoutStatus": "PENDING",
+  "paymentMethodId": 1,
+  "paymentMethod": {
+    "id": 1,
+    "name": "Momo",
+    "key": "MOMO"
+  },
+  "shippingMethodId": 2,
+  "shippingMethod": {
+    "id": 2,
+    "name": "Giao hàng nhanh",
+    "provider": "GHN",
+    "price": 25000
+  },
+  "discountCodeId": 5,
+  "discountCode": {
+    "id": 5,
+    "code": "SALE10",
+    "type": "PERCENTAGE",
+    "value": 10,
+    "bearer": "ADMIN"
+  },
+  "items": [
+    {
+      "id": 1,
+      "productId": 50,
+      "productName": "Áo thun nam",
+      "productTranslations": [
+        {
+          "id": 1,
+          "name": "Men's T-shirt",
+          "description": "Cotton T-shirt",
+          "languageId": "en"
+        }
+      ],
+      "skuPrice": 150000,
+      "image": "https://example.com/image.jpg",
+      "skuValue": "Size M, Màu đen",
+      "skuId": 25,
+      "quantity": 2,
+      "createdAt": "2025-11-09T10:00:00Z"
+    }
+  ],
+  "createdAt": "2025-11-09T10:00:00Z",
+  "updatedAt": "2025-11-09T10:30:00Z"
+}
+
+Mô tả:
+- Lấy toàn bộ thông tin chi tiết của 1 đơn hàng
+- Bao gồm thông tin người nhận (receiver)
+- Danh sách sản phẩm chi tiết với translations
+- Thông tin thanh toán, vận chuyển, mã giảm giá
+
+Điểm khác biệt so với API danh sách:
+- Có thông tin receiver (người nhận)
+- Có productTranslations (bản dịch tên sản phẩm)
+- Có updatedAt (thời gian cập nhật cuối)
+
+Lỗi có thể xảy ra:
+- 404: Không tìm thấy đơn hàng
+- 403: Không có quyền xem đơn hàng này (nếu không phải admin)
+
+--------------------------------------------------------------------------------
+7. CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
+--------------------------------------------------------------------------------
+Endpoint: PATCH /orders/:orderId/status
+Method: PATCH
+Headers: 
+  Authorization: Bearer <admin_token>
+
+Path Parameters:
+  - orderId: ID của đơn hàng (number)
+
+Request Body:
+{
+  "status": "PENDING_DELIVERY"
+}
+
+Các trạng thái hợp lệ:
+  - PENDING_PAYMENT: Chờ thanh toán
+  - PENDING_PICKUP: Chờ lấy hàng
+  - PENDING_DELIVERY: Đang giao hàng
+  - DELIVERED: Đã giao
+  - RETURNED: Đã trả hàng
+  - CANCELLED: Đã hủy
+
+Response Example:
+{
+  "id": 100,
+  "userId": 456,
+  "status": "PENDING_DELIVERY",
+  "total": 450000,
+  "updatedAt": "2025-11-09T11:00:00Z"
+}
+
+Mô tả:
+- Admin cập nhật trạng thái đơn hàng
+- Tự động cập nhật thời gian updatedAt
+- Lưu thông tin admin thực hiện (updatedById)
+
+Luồng trạng thái thông thường:
+1. PENDING_PAYMENT (Khách đặt hàng, chờ thanh toán)
+2. PENDING_PICKUP (Đã thanh toán, chờ shop chuẩn bị hàng)
+3. PENDING_DELIVERY (Đơn vị vận chuyển đang giao)
+4. DELIVERED (Đã giao thành công)
+
+Trạng thái đặc biệt:
+- CANCELLED: Hủy đơn (có thể từ bất kỳ trạng thái nào)
+- RETURNED: Trả hàng (thường từ DELIVERED)
+
+Lỗi có thể xảy ra:
+- 404: Không tìm thấy đơn hàng
+- 400: Trạng thái không hợp lệ
+
+
+================================================================================
+TÓM TẮT CÁC API
+================================================================================
+
+QUẢN LÝ ĐƠN ĐĂNG KÝ BÁN HÀNG:
+1. GET /seller-registration/admin/pending - Danh sách chờ duyệt (phân trang)
+2. GET /seller-registration/admin/by-status - Lọc theo trạng thái
+3. PUT /seller-registration/admin/:id/approve - Duyệt đơn
+4. PUT /seller-registration/admin/:id/reject - Từ chối đơn
+
+QUẢN LÝ ĐƠN HÀNG:
+5. GET /orders - Danh sách đơn hàng (phân trang + filter)
+6. GET /orders/:orderId - Chi tiết đơn hàng
+7. PATCH /orders/:orderId/status - Cập nhật trạng thái đơn hàng
+
+LƯU Ý QUAN TRỌNG:
+- Tất cả API đều yêu cầu Bearer token của admin trong header Authorization
+- API hỗ trợ phân trang để tối ưu hiệu suất
+- Mỗi hành động đều ghi log admin thực hiện
+- Có validation chặt chẽ cho mọi input
+
+
+================================================================================
+LUỒNG XỬ LÝ ĐƠN ĐĂNG KÝ BÁN HÀNG
+================================================================================
+
+BƯỚC 1: User đăng ký
+  - User submit thông tin: CCCD, địa chỉ, tài khoản ngân hàng
+  - Hệ thống tạo đơn với status = PENDING_PAYMENT
+
+BƯỚC 2: User thanh toán
+  - User quét QR code thanh toán phí đăng ký (500,000 VND)
+  - Sau khi thanh toán thành công, status = PENDING_REVIEW
+
+BƯỚC 3: Admin duyệt
+  - Admin xem danh sách đơn chờ duyệt
+  - Admin kiểm tra thông tin CCCD, địa chỉ, tài khoản
+  - Admin duyệt: status = APPROVED, user role = SELLER
+  - Hoặc Admin từ chối: status = REJECTED, có ghi lý do
+
+BƯỚC 4: User trở thành Seller
+  - Nếu được duyệt: User có thể đăng sản phẩm, quản lý shop
+  - Nếu bị từ chối: User xem lý do, có thể đăng ký lại
+
+
+================================================================================
+LUỒNG XỬ LÝ ĐƠN HÀNG
+================================================================================
+
+BƯỚC 1: Khách đặt hàng
+  - Khách chọn sản phẩm, thêm vào giỏ
+  - Khách tạo đơn hàng, status = PENDING_PAYMENT
+
+BƯỚC 2: Khách thanh toán
+  - Khách thanh toán qua Momo/VNPay/COD
+  - Sau khi thanh toán, status = PENDING_PICKUP
+
+BƯỚC 3: Shop chuẩn bị hàng
+  - Shop đóng gói sản phẩm
+  - Shop gọi đơn vị vận chuyển
+  - Admin/Shop cập nhật status = PENDING_DELIVERY
+
+BƯỚC 4: Giao hàng
+  - Đơn vị vận chuyển giao hàng
+  - Khách nhận hàng
+  - Admin/Shop cập nhật status = DELIVERED
+
+BƯỚC 5: Hoàn tất
+  - Hệ thống tính hoa hồng cho admin
+  - Chuyển tiền cho shop (trừ hoa hồng)
+  - Cập nhật payoutStatus = PAID
+
+
+================================================================================
+THÔNG TIN BỔ SUNG
+================================================================================
+
+CẤU TRÚC HOA HỒNG:
+- commissionRate: Tỷ lệ % admin thu (mặc định 8%)
+- adminCommissionAmount = total × commissionRate / 100
+- shopPayoutAmount = total - adminCommissionAmount
+
+VÍ DỤ TÍNH HOA HỒNG:
+  Đơn hàng 1,000,000 VND
+  - Admin commission (8%): 80,000 VND
+  - Shop nhận: 920,000 VND
+
+DISCOUNT CODE:
+- type: PERCENTAGE (giảm theo %) hoặc FIXED (giảm số tiền cố định)
+- bearer: ADMIN (admin chịu chi phí) hoặc SHOP (shop chịu chi phí)
+  + Nếu ADMIN bear: adminCommissionAmount không đổi
+  + Nếu SHOP bear: shopPayoutAmount giảm thêm discount
+
+SHIPPING:
+- Phí vận chuyển được tính vào total
+- Không ảnh hưởng đến tính hoa hồng
+- Shop có thể chọn các nhà vận chuyển khác nhau
+
+PAYOUT STATUS:
+- PENDING: Chưa chi trả cho shop
+- PARTIAL: Đã chi trả một phần
+- PAID: Đã chi trả đầy đủ
+
+
+================================================================================
+KẾT THÚC TÀI LIỆU
+================================================================================

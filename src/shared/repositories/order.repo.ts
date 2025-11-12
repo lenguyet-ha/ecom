@@ -19,9 +19,10 @@ import {
 } from 'src/routes/order/order.error';
 
 import { PrismaService } from 'src/shared/services/prisma.service';
-import { OrderStatus, PaymentStatus } from '../constants/order.constant';
+import { OrderStatus, OrderStatusType, PaymentStatus } from '../constants/order.constant';
 import { isNotFoundPrismaError } from '../helpers';
 import { OrderProducer } from 'src/routes/order/order.producer';
+import type { TokenPayload } from '../types/jwt.type';
 
 @Injectable()
 export class OrderRepo {
@@ -29,13 +30,15 @@ export class OrderRepo {
         private readonly prismaService: PrismaService,
       //  private orderProducer: OrderProducer,
     ) {}
-    async list(userId: number, query: GetOrderListQueryType): Promise<any> {
+    async list(user: TokenPayload, query: GetOrderListQueryType): Promise<any> {
         const { page, limit, status } = query;
         const skip = (page - 1) * limit;
         const take = limit;
+        
+        // Nếu là admin thì lấy tất cả đơn hàng, nếu không thì chỉ lấy đơn của user
         const where: Prisma.OrderWhereInput = {
-            userId,
-            status,
+            ...(user.roleName !== 'ADMIN' && { userId: user.userId }),
+            ...(status && { status }),
         };
 
         // Đếm tổng số order
@@ -51,9 +54,42 @@ export class OrderRepo {
                 status: true,
                 shopId: true,
                 createdAt: true,
+                // Financial fields
+                subtotal: true,
+                discountAmount: true,
+                total: true,
+                commissionRate: true,
+                adminCommissionAmount: true,
+                shopPayoutAmount: true,
+                payoutStatus: true,
+                // Relations
                 shop: {
                     select: {
                         name: true,
+                    },
+                },
+                paymentMethod: {
+                    select: {
+                        id: true,
+                        key: true,
+                        name: true,
+                    },
+                },
+                shippingMethod: {
+                    select: {
+                        id: true,
+                        name: true,
+                        provider: true,
+                        price: true,
+                    },
+                },
+                discountCode: {
+                    select: {
+                        id: true,
+                        code: true,
+                        type: true,
+                        value: true,
+                        bearer: true,
                     },
                 },
                 items: {
@@ -83,8 +119,24 @@ export class OrderRepo {
             status: item.status,
             shopId: item.shopId,
             shopName: item.shop?.name ?? null,
-            createdAt: item.createdAt,
+            // Financial information
+            subtotal: item.subtotal,
+            discountAmount: item.discountAmount,
+            total: item.total,
+            commissionRate: item.commissionRate,
+            adminCommissionAmount: item.adminCommissionAmount,
+            shopPayoutAmount: item.shopPayoutAmount,
+            payoutStatus: item.payoutStatus,
+            // Method relations
+            paymentMethodId: item.paymentMethod?.id ?? null,
+            paymentMethod: item.paymentMethod,
+            shippingMethodId: item.shippingMethod?.id ?? null,
+            shippingMethod: item.shippingMethod,
+            discountCodeId: item.discountCode?.id ?? null,
+            discountCode: item.discountCode,
+            // Items and timestamp
             items: item.items,
+            createdAt: item.createdAt,
         }));
         return {
             data: transformedData,
@@ -99,28 +151,61 @@ export class OrderRepo {
         // 2. Kiểm tra số lượng mua có lớn hơn số lượng tồn kho hay không
         // 3. Kiểm tra xem tất cả sản phẩm mua có sản phẩm nào bị xóa hay ẩn không
         // 4. Kiểm tra xem các skuId trong cartItem gửi lên có thuộc về shopid gửi lên không
-        // 5. Tạo order
-        // 6. Xóa cartItem
+        // 5. Validate discount codes, shipping methods, payment methods
+        // 6. Tạo order
+        // 7. Xóa cartItem
         const allBodyCartItemIds = body.map((item) => item.cartItemIds).flat();
-        const cartItems = await this.prismaService.cartItem.findMany({
-            where: {
-                id: {
-                    in: allBodyCartItemIds,
+        
+        // Get all IDs to validate
+        const discountCodeIds = body.map((item) => item.discountCodeId).filter((id): id is number => id !== undefined);
+        const shippingMethodIds = body.map((item) => item.shippingMethodId).filter((id): id is number => id !== undefined);
+        const paymentMethodIds = body.map((item) => item.paymentMethodId).filter((id): id is number => id !== undefined);
+
+        const [cartItems, discountCodes, shippingMethods, paymentMethods] = await Promise.all([
+            this.prismaService.cartItem.findMany({
+                where: {
+                    id: {
+                        in: allBodyCartItemIds,
+                    },
+                    userId,
                 },
-                userId,
-            },
-            include: {
-                sku: {
-                    include: {
-                        product: {
-                            include: {
-                                productTranslations: true,
+                include: {
+                    sku: {
+                        include: {
+                            product: {
+                                include: {
+                                    productTranslations: true,
+                                },
                             },
                         },
                     },
                 },
-            },
-        });
+            }),
+            discountCodeIds.length > 0
+                ? this.prismaService.discountCode.findMany({
+                      where: {
+                          id: { in: discountCodeIds },
+                          isActive: true,
+                      },
+                  })
+                : Promise.resolve([]),
+            shippingMethodIds.length > 0
+                ? this.prismaService.shippingMethod.findMany({
+                      where: {
+                          id: { in: shippingMethodIds },
+                          isActive: true,
+                      },
+                  })
+                : Promise.resolve([]),
+            paymentMethodIds.length > 0
+                ? this.prismaService.paymentMethod.findMany({
+                      where: {
+                          id: { in: paymentMethodIds },
+                          isActive: true,
+                      },
+                  })
+                : Promise.resolve([]),
+        ]);
         // 1. Kiểm tra xem tất cả cartItemIds có tồn tại trong cơ sở dữ liệu hay không
         if (cartItems.length !== allBodyCartItemIds.length) {
             throw NotFoundCartItemException;
@@ -171,8 +256,14 @@ export class OrderRepo {
                 },
             });
             const orders$ = Promise.all(
-                body.map((item) =>
-                    tx.order.create({
+                body.map((item) => {
+                    // Calculate commission (8% of subtotal - discountAmount)
+                    const commissionRate = 8.0; // Default commission rate
+                    const discountableAmount = item.subtotal - item.discountAmount;
+                    const adminCommissionAmount = discountableAmount * (commissionRate / 100);
+                    const shopPayoutAmount = discountableAmount - adminCommissionAmount;
+
+                    return tx.order.create({
                         data: {
                             userId,
                             status: OrderStatus.PENDING_PAYMENT,
@@ -180,6 +271,18 @@ export class OrderRepo {
                             createdById: userId,
                             shopId: item.shopId,
                             paymentId: payment.id,
+                            // Financial fields
+                            subtotal: item.subtotal,
+                            discountAmount: item.discountAmount,
+                            total: item.total,
+                            commissionRate,
+                            adminCommissionAmount,
+                            shopPayoutAmount,
+                            payoutStatus: 'PENDING',
+                            // Relations
+                            discountCodeId: item.discountCodeId,
+                            shippingMethodId: item.shippingMethodId,
+                            paymentMethodId: item.paymentMethodId,
                             items: {
                                 create: item.cartItemIds.map((cartItemId) => {
                                     const cartItem = cartItemMap.get(cartItemId)!;
@@ -213,8 +316,8 @@ export class OrderRepo {
                                 }),
                             },
                         },
-                    }),
-                ),
+                    });
+                }),
             );
             const cartItem$ = tx.cartItem.deleteMany({
                 where: {
@@ -246,18 +349,45 @@ export class OrderRepo {
         };
     }
 
-    async detail(userId: number, orderid: number): Promise<any> {
-        const order = await this.prismaService.order.findUnique({
-            where: {
-                id: orderid,
-                userId,
-                deletedAt: null,
-            },
+    async detail(user: TokenPayload, orderid: number): Promise<any> {
+        // Nếu là admin thì xem được tất cả đơn, nếu không thì chỉ xem đơn của mình
+        const where: Prisma.OrderWhereInput = {
+            id: orderid,
+            ...(user.roleName !== 'ADMIN' && { userId: user.userId }),
+            deletedAt: null,
+        };
+
+        const order = await this.prismaService.order.findFirst({
+            where,
             include: {
                 items: true,
                 shop: {
                     select: {
                         name: true,
+                    },
+                },
+                paymentMethod: {
+                    select: {
+                        id: true,
+                        key: true,
+                        name: true,
+                    },
+                },
+                shippingMethod: {
+                    select: {
+                        id: true,
+                        name: true,
+                        provider: true,
+                        price: true,
+                    },
+                },
+                discountCode: {
+                    select: {
+                        id: true,
+                        code: true,
+                        type: true,
+                        value: true,
+                        bearer: true,
                     },
                 },
             },
@@ -271,14 +401,30 @@ export class OrderRepo {
             status: order.status,
             receiver: order.receiver,
             shopId: order.shopId,
+            shopName: order.shop?.name ?? null,
+            // Financial information
+            subtotal: order.subtotal,
+            discountAmount: order.discountAmount,
+            total: order.total,
+            commissionRate: order.commissionRate,
+            adminCommissionAmount: order.adminCommissionAmount,
+            shopPayoutAmount: order.shopPayoutAmount,
+            payoutStatus: order.payoutStatus,
+            // Method relations
+            paymentMethodId: order.paymentMethodId,
+            paymentMethod: order.paymentMethod,
+            shippingMethodId: order.shippingMethodId,
+            shippingMethod: order.shippingMethod,
+            discountCodeId: order.discountCodeId,
+            discountCode: order.discountCode,
+            // Items and metadata
+            items: order.items,
             createdById: order.createdById,
             updatedById: order.updatedById,
             deletedById: order.deletedById,
             deletedAt: order.deletedAt,
             createdAt: order.createdAt,
             updatedAt: order.updatedAt,
-            items: order.items,
-            shopName: order.shop?.name ?? null,
         };
     }
 
@@ -305,6 +451,35 @@ export class OrderRepo {
                     updatedById: userId,
                 },
             });
+            return updatedOrder;
+        } catch (error) {
+            if (isNotFoundPrismaError(error)) {
+                throw OrderNotFoundException;
+            }
+            throw error;
+        }
+    }
+
+    async updateStatus(orderId: number, status: OrderStatusType, userId: number): Promise<any> {
+        try {
+            const order = await this.prismaService.order.findUniqueOrThrow({
+                where: {
+                    id: orderId,
+                    deletedAt: null,
+                },
+            });
+
+            const updatedOrder = await this.prismaService.order.update({
+                where: {
+                    id: orderId,
+                    deletedAt: null,
+                },
+                data: {
+                    status,
+                    updatedById: userId,
+                },
+            });
+
             return updatedOrder;
         } catch (error) {
             if (isNotFoundPrismaError(error)) {
