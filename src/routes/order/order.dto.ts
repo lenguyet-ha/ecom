@@ -107,6 +107,7 @@ export const GetOrderListQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().default(10),
     status: OrderStatusSchema.optional(),
+    shopId: z.coerce.number().int().positive().optional(),
 });
 
 export const GetOrderDetailResSchema = OrderSchema.extend({
