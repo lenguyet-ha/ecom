@@ -31,7 +31,7 @@ export class OrderRepo {
       //  private orderProducer: OrderProducer,
     ) {}
     async list(user: TokenPayload, query: GetOrderListQueryType): Promise<any> {
-        const { page, limit, status } = query;
+        const { page, limit, status, shopId } = query;
         const skip = (page - 1) * limit;
         const take = limit;
         
@@ -39,6 +39,7 @@ export class OrderRepo {
         const where: Prisma.OrderWhereInput = {
             ...(user.roleName !== 'ADMIN' && { userId: user.userId }),
             ...(status && { status }),
+            ...(shopId && { shopId }),
         };
 
         // Đếm tổng số order
